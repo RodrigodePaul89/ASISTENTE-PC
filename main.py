@@ -38,6 +38,15 @@ class DesktopPet:
 
         # Eventos
         self.label.bind("<Button-1>", self.toggle_state)
+        self.label.bind("<Button-3>", self.show_menu)
+
+        # -------- MENÚ --------
+        self.menu = tk.Menu(self.root, tearoff=0)
+        self.menu.add_command(label="🐸 Caminar", command=self.set_walking)
+        self.menu.add_command(label="🛑 Detener", command=self.set_idle)
+        self.menu.add_command(label="🎤 Escuchar", command=self.set_listening)
+        self.menu.add_separator()
+        self.menu.add_command(label="❌ Salir", command=self.root.destroy)
 
         # Iniciar ciclos
         self.animate()
@@ -51,9 +60,9 @@ class DesktopPet:
         if self.state == "walking":
             delay = 100
         elif self.state == "idle":
-            delay = 300  # más lenta
+            delay = 300
         elif self.state == "listening":
-            delay = 50   # más rápida
+            delay = 50
         else:
             delay = 100
 
@@ -88,12 +97,28 @@ class DesktopPet:
             self.root.geometry(f"+{self.x}+{self.y}")
 
         elif self.state == "listening":
-            # Pequeño efecto vibración
-            self.root.geometry(f"+{self.x + random.randint(-3,3)}+{self.y + random.randint(-3,3)}")
+            # Pequeña vibración
+            self.root.geometry(
+                f"+{self.x + random.randint(-3,3)}+{self.y + random.randint(-3,3)}"
+            )
 
         self.root.after(40, self.move)
 
-    # ---------------- CAMBIO DE ESTADO ----------------
+    # ---------------- MENÚ ----------------
+    def show_menu(self, event):
+        self.state = "menu"
+        self.menu.tk_popup(event.x_root, event.y_root)
+
+    def set_walking(self):
+        self.state = "walking"
+
+    def set_idle(self):
+        self.state = "idle"
+
+    def set_listening(self):
+        self.state = "listening"
+
+    # ---------------- CLICK IZQUIERDO ----------------
     def toggle_state(self, event):
         if self.state == "walking":
             self.state = "idle"
