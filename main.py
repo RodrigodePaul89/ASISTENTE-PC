@@ -94,9 +94,9 @@ class DesktopPet:
 
         # Elegir frames según dirección
         if self.direction_x == 1:
-            current_frames = self.frames_right
-        else:
             current_frames = self.frames_left
+        else:
+            current_frames = self.frames_right
 
         self.label.config(image=current_frames[self.frame_index])
         self.frame_index = (self.frame_index + 1) % len(current_frames)
