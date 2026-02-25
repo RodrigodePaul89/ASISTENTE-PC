@@ -15,17 +15,21 @@ class DesktopPet:
 
         # Cargar GIF
         self.gif = Image.open("ranaa.gif")
+
         # Frames normales (mirando derecha)
         self.frames_right = [
-        ImageTk.PhotoImage(frame.copy().convert("RGBA"))
-        for frame in ImageSequence.Iterator(self.gif)
-    ]
+            ImageTk.PhotoImage(frame.copy().convert("RGBA"))
+            for frame in ImageSequence.Iterator(self.gif)
+        ]
 
         # Frames volteados (mirando izquierda)
         self.frames_left = [
-        ImageTk.PhotoImage(frame.copy().convert("RGBA").transpose(Image.FLIP_LEFT_RIGHT))
-        for frame in ImageSequence.Iterator(self.gif)
-]
+            ImageTk.PhotoImage(
+                frame.copy().convert("RGBA").transpose(Image.FLIP_LEFT_RIGHT)
+            )
+            for frame in ImageSequence.Iterator(self.gif)
+        ]
+
         self.label = tk.Label(root, bg="white")
         self.label.pack()
 
@@ -37,8 +41,14 @@ class DesktopPet:
         self.direction_y = 1
 
         # Posición inicial aleatoria
-        self.x = random.randint(0, self.root.winfo_screenwidth() - 300)
-        self.y = random.randint(0, self.root.winfo_screenheight() - 300)
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        sprite_width = self.frames_right[0].width()
+        sprite_height = self.frames_right[0].height()
+
+        self.x = random.randint(0, screen_width - sprite_width)
+        self.y = random.randint(0, screen_height - sprite_height)
 
         self.root.geometry(f"+{self.x}+{self.y}")
 
@@ -54,17 +64,39 @@ class DesktopPet:
         self.menu.add_separator()
         self.menu.add_command(label="❌ Salir", command=self.root.destroy)
 
+        # Comportamiento automático
+        self.schedule_behavior_change()
+
         # Iniciar ciclos
         self.animate()
         self.move()
 
+    # ---------------- COMPORTAMIENTO AUTOMÁTICO ----------------
+    def schedule_behavior_change(self):
+        change_time = random.randint(4000, 8000)
+        self.root.after(change_time, self.auto_behavior)
+
+    def auto_behavior(self):
+        if self.state == "walking":
+            self.state = "idle"
+
+        elif self.state == "idle":
+            self.state = "walking"
+
+            # Cambio de dirección aleatorio
+            self.direction_x = random.choice([-1, 1])
+            self.direction_y = random.choice([-1, 1])
+
+        self.schedule_behavior_change()
+
     # ---------------- ANIMACIÓN ----------------
     def animate(self):
+
         # Elegir frames según dirección
         if self.direction_x == 1:
-            current_frames = self.frames_left
-        else:
             current_frames = self.frames_right
+        else:
+            current_frames = self.frames_left
 
         self.label.config(image=current_frames[self.frame_index])
         self.frame_index = (self.frame_index + 1) % len(current_frames)
@@ -113,7 +145,7 @@ class DesktopPet:
         elif self.state == "listening":
             # Pequeña vibración
             self.root.geometry(
-                f"+{self.x + random.randint(-3,3)}+{self.y + random.randint(-3,3)}"
+                f"+{self.x + random.randint(-3, 3)}+{self.y + random.randint(-3, 3)}"
             )
 
         self.root.after(40, self.move)
