@@ -14,12 +14,18 @@ class DesktopPet:
         self.root.wm_attributes("-transparentcolor", "white")
 
         # Cargar GIF
-        self.gif = Image.open("rana.gif")
-        self.frames = [
-            ImageTk.PhotoImage(frame.copy().convert("RGBA"))
-            for frame in ImageSequence.Iterator(self.gif)
-        ]
+        self.gif = Image.open("ranaa.gif")
+        # Frames normales (mirando derecha)
+        self.frames_right = [
+        ImageTk.PhotoImage(frame.copy().convert("RGBA"))
+        for frame in ImageSequence.Iterator(self.gif)
+    ]
 
+        # Frames volteados (mirando izquierda)
+        self.frames_left = [
+        ImageTk.PhotoImage(frame.copy().convert("RGBA").transpose(Image.FLIP_LEFT_RIGHT))
+        for frame in ImageSequence.Iterator(self.gif)
+]
         self.label = tk.Label(root, bg="white")
         self.label.pack()
 
@@ -54,8 +60,14 @@ class DesktopPet:
 
     # ---------------- ANIMACIÓN ----------------
     def animate(self):
-        self.label.config(image=self.frames[self.frame_index])
-        self.frame_index = (self.frame_index + 1) % len(self.frames)
+        # Elegir frames según dirección
+        if self.direction_x == 1:
+            current_frames = self.frames_left
+        else:
+            current_frames = self.frames_right
+
+        self.label.config(image=current_frames[self.frame_index])
+        self.frame_index = (self.frame_index + 1) % len(current_frames)
 
         if self.state == "walking":
             delay = 100
@@ -74,8 +86,8 @@ class DesktopPet:
             screen_width = self.root.winfo_screenwidth()
             screen_height = self.root.winfo_screenheight()
 
-            sprite_width = self.frames[0].width()
-            sprite_height = self.frames[0].height()
+            sprite_width = self.frames_right[0].width()
+            sprite_height = self.frames_right[0].height()
 
             self.x += 5 * self.direction_x
             self.y += 3 * self.direction_y
@@ -83,9 +95,11 @@ class DesktopPet:
             if self.x <= 0:
                 self.x = 0
                 self.direction_x = 1
+                self.frame_index = 0
             elif self.x >= screen_width - sprite_width:
                 self.x = screen_width - sprite_width
                 self.direction_x = -1
+                self.frame_index = 0
 
             if self.y <= 0:
                 self.y = 0
