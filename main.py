@@ -6,6 +6,7 @@ import random
 class DesktopPet:
     def __init__(self, root):
         self.root = root
+        self.schedule_behavior_change()
         self.state = "walking"
 
         # Configuración ventana
@@ -73,19 +74,29 @@ class DesktopPet:
 
     # ---------------- COMPORTAMIENTO AUTOMÁTICO ----------------
     def schedule_behavior_change(self):
-        change_time = random.randint(4000, 8000)
+        change_time = random.randint(10000, 15000)
         self.root.after(change_time, self.auto_behavior)
 
     def auto_behavior(self):
         if self.state == "walking":
-            self.state = "idle"
+            action = random.choice(["idle", "change_direction", "keep_walking"])
 
+            if action == "idle":
+                self.state = "idle"
+            
+            elif action == "change_direction":
+                self.direction_x = random.choice([-1,1])
+                self.direction_y = random.choice([-1,1])
+
+            #keep_walking no hace nd(sigue igual)
+
+        #Si esta en idle
         elif self.state == "idle":
-            self.state = "walking"
+            self.state == "walking"
 
-            # Cambio de dirección aleatorio
-            self.direction_x = random.choice([-1, 1])
-            self.direction_y = random.choice([-1, 1])
+            #Al volver a caminar cambia direccion
+            self.direction_x = random.choice([-1,1])
+            self.direction_y = random.choice([-1,1])
 
         self.schedule_behavior_change()
 
