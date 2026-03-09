@@ -1,5 +1,0 @@
-Que cuando se quede quieta atrape moscas mientras uno le hace la pregunta o interactua con ella
-Que cuando se le mantenga presionado el click tiemble hasta que salga una animacion donde explote y salga del programa
-Hacer que la rana cambie de orientacion segun la direccion en que vaya
-Movimiento menos robotico (direccion aleatoria)
-Que cuando le diga hola ella me diga "me pica la cola"
