@@ -1,0 +1,57 @@
+[
+  {
+    "trigger": "carpeta",
+    "template": "crea carpeta {arg}",
+    "description": "Crea carpeta en escritorio"
+  },
+  {
+    "trigger": "web",
+    "template": "abre {arg}",
+    "description": "Abre sitio web o URL"
+  },
+  {
+    "trigger": "nota",
+    "template": "crear nota {arg}",
+    "description": "Crea nota rapida con ese contenido"
+  },
+  {
+    "trigger": "app",
+    "template": "abre {arg}",
+    "description": "Lanza aplicacion por nombre"
+  },
+  {
+    "trigger": "recuerda",
+    "template": "recordatorio en {arg}",
+    "description": "Recordatorio rapido (ej: recuerda 5 minutos tomar agua)"
+  },
+  {
+    "trigger": "busca",
+    "template": "buscar archivo {arg}",
+    "description": "Busca archivo o carpeta en escritorio"
+  },
+  {
+    "trigger": "renombra",
+    "template": "renombra {arg}",
+    "description": "Renombra elemento (ej: renombra viejo a nuevo)"
+  },
+  {
+    "trigger": "mueve",
+    "template": "mueve {arg}",
+    "description": "Mueve elemento (ej: mueve archivo a carpeta)"
+  },
+  {
+    "trigger": "captura",
+    "template": "captura de pantalla",
+    "description": "Toma captura de pantalla (sin argumento)"
+  },
+  {
+    "trigger": "limpia",
+    "template": "limpiar escritorio",
+    "description": "Limpia escritorio (sin argumento)"
+  },
+  {
+    "trigger": "bloquea",
+    "template": "bloquea pc",
+    "description": "Bloquea la sesion de Windows (sin argumento)"
+  }
+]

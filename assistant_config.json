@@ -1,0 +1,148 @@
+{
+  "wake_word": "asistente",
+  "require_wake_word": true,
+  "permission_level": "full",
+  "llm_enabled": true,
+  "llm_provider": "ollama",
+  "llm_model": "qwen2.5:1.5b-instruct",
+  "llm_endpoint": "http://127.0.0.1:11434/api/chat",
+  "llm_offline_only": true,
+  "functional_automation_enabled": false,
+  "pet_name": "Mimi",
+  "user_name_memory": "Saul",
+  "pet_memory_notes": [],
+  "chat_transcript": [
+    [
+      "Mascota",
+      "Chat local listo. Puedes escribirme aqui."
+    ],
+    [
+      "Tu",
+      "hola Mimi como estas"
+    ],
+    [
+      "Mascota",
+      "Estoy muy bien y lista para ayudarte."
+    ],
+    [
+      "Tu",
+      "puedes abrir el explorador de archivos de mi computador?"
+    ],
+    [
+      "Mascota",
+      "Entendi esto: abrir la aplicacion el explorador de archivos de mi computador. Estas seguro de realizar el cambio especificado?, si/no."
+    ],
+    [
+      "Tu",
+      "si"
+    ],
+    [
+      "Mascota",
+      "No pude completar esto: abrir la aplicacion el explorador de archivos de mi computador."
+    ],
+    [
+      "Tu",
+      "puedes ver en que pestalla te encuentras?"
+    ],
+    [
+      "Mascota",
+      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+    ],
+    [
+      "Tu",
+      "donde estas?"
+    ],
+    [
+      "Mascota",
+      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+    ],
+    [
+      "Tu",
+      "hola"
+    ],
+    [
+      "Mascota",
+      "Hola, soy Mimi. Estoy lista para asistirte."
+    ],
+    [
+      "Tu",
+      "saul es gey?"
+    ],
+    [
+      "Mascota",
+      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+    ],
+    [
+      "Tu",
+      "hola como estas?"
+    ],
+    [
+      "Mascota",
+      "Estoy estable, puedo seguir trabajando."
+    ],
+    [
+      "Tu",
+      "carpeta +daivd es gey"
+    ],
+    [
+      "Mascota",
+      "Estructura creada en escritorio: crea carpeta daivd es gey."
+    ],
+    [
+      "Tu",
+      "web +unimayor.edu.co"
+    ],
+    [
+      "Mascota",
+      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+    ],
+    [
+      "Tu",
+      "web +gmail.com"
+    ],
+    [
+      "Mascota",
+      "Entendi esto: abrir el sitio gmail.com. Estas seguro de realizar el cambio especificado?, si/no."
+    ],
+    [
+      "Tu",
+      "si"
+    ],
+    [
+      "Mascota",
+      "Listo. abrir el sitio gmail.com."
+    ],
+    [
+      "Tu",
+      "abrir +whatsapp"
+    ],
+    [
+      "Mascota",
+      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+    ],
+    [
+      "Tu",
+      "app +whatsapp"
+    ],
+    [
+      "Mascota",
+      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+    ],
+    [
+      "Tu",
+      "bloquea"
+    ],
+    [
+      "Mascota",
+      "Entendi esto: bloquear la sesion de Windows. Estas seguro de realizar el cambio especificado?, si/no."
+    ],
+    [
+      "Tu",
+      "si"
+    ],
+    [
+      "Mascota",
+      "Listo. bloquear la sesion de Windows."
+    ]
+  ]
+}

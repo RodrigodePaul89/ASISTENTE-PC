@@ -10,12 +10,23 @@ import threading
 import time
 import tkinter as tk
 import math
-import urllib.error
-import urllib.request
 from pathlib import Path
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, scrolledtext, simpledialog
 
 from PIL import Image, ImageSequence, ImageTk
+from assistant_alias_manager import AliasManager
+from assistant_config_store import JsonConfigStore
+from assistant_chat_controller import ChatUIController
+from assistant_command_handler import AssistantCommandHandler
+from assistant_design_manager import PetDesignManager
+from assistant_actions_manager import SystemActionManager
+from assistant_identity_manager import PetIdentityManager
+from assistant_llm_gateway import LLMGateway
+from assistant_permissions import PermissionManager
+from assistant_state_manager import PetStateManager
+from assistant_text_utils import CommandTextParser
+from assistant_ui_event_controller import UIEventController
+from assistant_voice_manager import VoiceManager
 
 try:
     import pyttsx3
@@ -47,7 +58,8 @@ class DesktopPet:
         self.is_running = False
         self.run_boost_until = 0.0
         self.escape_distance = 210
-        self.execution_mode = "free"
+        self.execution_mode = "platform"
+        self.blocks_enabled = False
         self.blocks = []
         self.block_size = (48, 48)
         self.max_blocks = 20
@@ -109,6 +121,23 @@ class DesktopPet:
 
         self.hold_to_explode_seconds = 1.8
         self.asset_dir = Path(__file__).resolve().parent
+        self.config_store = JsonConfigStore()
+        self.text_parser = CommandTextParser()
+        self.llm_gateway = LLMGateway()
+        self.design_manager = PetDesignManager(self)
+        self.identity_manager = PetIdentityManager(self)
+        self.chat_controller = ChatUIController(self)
+        self.action_manager = SystemActionManager(self)
+        self.alias_manager = AliasManager(self)
+        self.command_handler = AssistantCommandHandler(self)
+        self.state_manager = PetStateManager(self)
+        self.ui_event_controller = UIEventController(self)
+        self.voice_manager = VoiceManager(
+            owner=self,
+            voice_available=VOICE_AVAILABLE,
+            sr_module=sr if VOICE_AVAILABLE else None,
+            tts_module=pyttsx3 if VOICE_AVAILABLE else None,
+        )
         self.save_file = self.asset_dir / "pet_state.json"
         self.assistant_config_file = self.asset_dir / "assistant_config.json"
         self.available_styles = self.discover_available_styles()
@@ -177,18 +206,44 @@ class DesktopPet:
         self.visibility_guard_ms = 1800
         self.assistant_job = None
         self.assistant_tick_ms = 6000
+        self.chat_window = None
+        self.chat_history = None
+        self.chat_entry = None
+        self.chat_status_label = None
+        self.chat_send_button = None
+        self.chat_request_in_flight = False
+        self.chat_autohide_job = None
+        self.chat_inactivity_ms = 0
+        self.chat_header_label = None
+        self.chat_transcript = [("Mascota", "Chat local listo. Puedes escribirme aqui.")]
+        self.pending_action = None
+        self.pending_action_timeout_seconds = 25
+        self.functional_automation_enabled = False
         self.next_desktop_maintenance_at = 0.0
         self.autocare_cooldowns = {"feed": 0.0, "play": 0.0, "rest": 0.0}
         self.voice_wake_word = "asistente"
         self.require_wake_word = True
         self.permission_level = "full"  # query | files | full
         self.permission_levels = ("query", "files", "full")
-        self.llm_enabled = bool(os.getenv("OPENAI_API_KEY"))
-        self.llm_provider = "openai"
-        self.llm_model = os.getenv("ASSISTANT_LLM_MODEL", "gpt-4o-mini")
+        self.permission_manager = PermissionManager(self)
+        self.llm_provider = str(os.getenv("ASSISTANT_LLM_PROVIDER", "ollama")).strip().lower()
+        self.llm_enabled = bool(os.getenv("OPENAI_API_KEY")) if self.llm_provider == "openai" else True
+        self.llm_model = os.getenv("ASSISTANT_LLM_MODEL", "qwen2.5:1.5b-instruct")
+        self.local_intent_model = os.getenv("ASSISTANT_LOCAL_INTENT_MODEL", "qwen2.5:1.5b-instruct")
         self.llm_api_key = os.getenv("OPENAI_API_KEY", "")
-        self.llm_endpoint = "https://api.openai.com/v1/chat/completions"
+        self.llm_endpoint = os.getenv("ASSISTANT_LLM_ENDPOINT", "http://127.0.0.1:11434/api/chat")
         self.llm_timeout_seconds = 9
+        self.llm_offline_only = True
+        self.llm_providers = ("ollama", "openai")
+        self.pet_name = "Mimi"
+        self.user_name_memory = ""
+        self.pet_memory_notes = []
+        if self.llm_provider not in self.llm_providers:
+            self.llm_provider = "ollama"
+        if self.llm_provider == "openai" and not self.llm_endpoint.startswith("https://"):
+            self.llm_endpoint = "https://api.openai.com/v1/chat/completions"
+        if self.llm_provider == "ollama" and "openai.com" in self.llm_endpoint:
+            self.llm_endpoint = "http://127.0.0.1:11434/api/chat"
         self.allowed_roots = [
             self.desktop_path.resolve(),
             (Path.home() / "Documents").resolve(),
@@ -207,15 +262,11 @@ class DesktopPet:
         # Cargar animaciones por estado con fallback.
         self.state_animations = self.load_state_animations()
         self.animation_state = "walking"
-        sprite_width, _ = self.get_walking_sprite_size()
-        # Mantener bloques menores al tamano de la mascota para evitar colisiones extranas.
-        block_edge = max(32, min(56, sprite_width - 16))
-        self.block_size = (block_edge, block_edge)
-        self.label = tk.Label(root, bg="white")
-        self.label.pack()
-
-        # Variables animación
         self.frame_index = 0
+
+        # Widget principal
+        self.label = tk.Label(self.root, bg="white", borderwidth=0, highlightthickness=0)
+        self.label.pack()
 
         # Dirección movimiento
         self.direction_x = random.choice([-1, 1])
@@ -239,6 +290,7 @@ class DesktopPet:
         self.label.bind("<ButtonPress-1>", self.on_left_press)
         self.label.bind("<ButtonRelease-1>", self.on_left_release)
         self.label.bind("<B1-Motion>", self.on_left_drag)
+        self.label.bind("<Double-Button-1>", lambda _event: self.open_chat_bubble())
         self.label.bind("<Button-3>", self.show_menu)
 
         # -------- MENÚ --------
@@ -248,6 +300,7 @@ class DesktopPet:
         self.menu.add_separator()
         self.menu.add_command(label="🎮 Modo Libre", command=self.set_mode_free)
         self.menu.add_command(label="🕹️ Modo Suelo", command=self.set_mode_platform)
+        self.menu.add_command(label="💬 Chat", command=self.open_chat_bubble)
         self.menu.add_command(label="🎤 Escuchar", command=self.start_listening)
         self.menu.add_separator()
         self.menu.add_command(label="⏯️ Musica play/pausa", command=lambda: self.control_media_key("play_pause"))
@@ -255,20 +308,21 @@ class DesktopPet:
         self.menu.add_command(label="⏮️ Cancion anterior", command=lambda: self.control_media_key("prev"))
         self.menu.add_separator()
         self.menu.add_command(label="🧪 Sandbox ON/OFF", command=self.toggle_sandbox)
-        self.menu.add_command(label="🧹 Limpiar bloques", command=self.clear_blocks)
+        self.menu.add_command(label="🔒 IA Local (solo Ollama)", command=self.activate_local_ai_mode)
+        self.menu.add_command(label="🌐 IA + Internet", command=self.activate_cloud_ai_mode)
         self.menu.add_separator()
         self.menu.add_command(label="❌ Salir", command=self.root.destroy)
 
         self.root.bind_all("<Left>", lambda _event: self.sandbox_nudge(-1))
         self.root.bind_all("<Right>", lambda _event: self.sandbox_nudge(1))
         self.root.bind_all("<Up>", lambda _event: self.sandbox_jump())
-        self.root.bind_all("<b>", lambda _event: self.place_block_at_cursor() if self.sandbox_mode else None)
-        self.root.bind_all("<c>", lambda _event: self.clear_blocks() if self.sandbox_mode else None)
 
         # Iniciar ciclos
         self.load_assistant_config()
         self.apply_personality(self.personality_name)
         self.load_pet_state(quiet=True)
+        # Requisito del proyecto: arrancar siempre en modo suelo.
+        self.set_mode_platform()
         self.stats["total_sessions"] += 1
         self.animate()
         self.move()
@@ -279,104 +333,10 @@ class DesktopPet:
         self.schedule_auto_color_change()
 
     def discover_available_styles(self):
-        img_root = self.asset_dir.parent / "img"
-        required = ["Idle.png", "Walk.png"]
-
-        discovered = []
-        if img_root.exists():
-            for entry in img_root.iterdir():
-                if not entry.is_dir():
-                    continue
-                if all((entry / req).exists() for req in required):
-                    discovered.append(entry.name)
-
-        if discovered:
-            preferred = ["Musketeer", "Knight", "Enchantress"]
-            preferred_found = [name for name in preferred if name in discovered]
-
-            if preferred_found:
-                print(f"[Mascota] Estilos detectados: {', '.join(preferred_found)}")
-                return preferred_found
-
-            discovered_sorted = sorted(discovered)
-            print(f"[Mascota] Estilos detectados: {', '.join(discovered_sorted)}")
-            return discovered_sorted
-
-        return ["Musketeer", "Knight", "Enchantress"]
+        return self.design_manager.discover_available_styles()
 
     def build_animation_sources_for_style(self, style_name):
-        style_base = (Path("..") / "img" / style_name).as_posix()
-
-        return {
-            "walking": [
-                f"{style_base}/Walk.png",
-                f"{style_base}/walk.png",
-                f"{style_base}/Run.png",
-                "walk.gif",
-                "walking.gif",
-                "ranaa.gif",
-                "rana.gif",
-                "ranaaa.gif",
-            ],
-            "idle": [
-                f"{style_base}/Idle.png",
-                "idle.gif",
-                "breathing.gif",
-                "ranaaa.gif",
-                "ranaa.gif",
-            ],
-            "running": [
-                f"{style_base}/Run.png",
-                f"{style_base}/Walk.png",
-                f"{style_base}/walk.png",
-            ],
-            "jump": [
-                f"{style_base}/Jump.png",
-                f"{style_base}/Run.png",
-                f"{style_base}/Walk.png",
-            ],
-            "dead": [
-                f"{style_base}/Dead.png",
-                f"{style_base}/Hurt.png",
-                f"{style_base}/Idle.png",
-            ],
-            "listening": [
-                f"{style_base}/Attack_4.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Jump.png",
-                f"{style_base}/Hurt.png",
-                "listening.gif",
-                "listen.gif",
-                "rana.gif",
-                "ranaa.gif",
-            ],
-            "attack_1": [
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_4.png",
-            ],
-            "attack_2": [
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_4.png",
-            ],
-            "attack_3": [
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Attack_4.png",
-            ],
-            "attack_4": [
-                f"{style_base}/Attack_4.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-            ],
-        }
+        return self.design_manager.build_animation_sources_for_style(style_name)
 
     def schedule_auto_color_change(self):
         if self.is_destroying:
@@ -417,9 +377,14 @@ class DesktopPet:
         self.root.attributes("-topmost", True)
         self.root.lift()
         self.root.geometry(f"+{self.x}+{self.y}")
+        self.position_chat_window()
 
     def schedule_assistant_autonomy(self):
         if self.is_destroying:
+            return
+
+        if not self.functional_automation_enabled:
+            self.assistant_job = self.root.after(self.assistant_tick_ms, self.schedule_assistant_autonomy)
             return
 
         self.run_autocare_if_needed()
@@ -442,7 +407,7 @@ class DesktopPet:
             self.autocare_cooldowns["rest"] = now + random.uniform(42, 78)
 
     def run_desktop_maintenance_if_needed(self):
-        if not self.has_permission("automation"):
+        if not self.has_permission("files"):
             return
 
         now = time.time()
@@ -479,6 +444,8 @@ class DesktopPet:
             self.archive_desktop_item(selected.name, auto=True)
 
     def load_block_image_paths(self):
+        if not self.blocks_enabled:
+            return []
         if not self.object_assets_dir.exists():
             print("[Bloque] Carpeta 'objets' no encontrada, usando bloques simples.")
             return []
@@ -530,16 +497,7 @@ class DesktopPet:
         self.schedule_auto_color_change()
 
     def choose_next_style(self):
-        if len(self.available_styles) <= 1:
-            return self.current_style
-
-        if not self.style_cycle_queue:
-            self.style_cycle_queue = [
-                style for style in self.available_styles if style != self.current_style
-            ]
-            random.shuffle(self.style_cycle_queue)
-
-        return self.style_cycle_queue.pop(0)
+        return self.design_manager.choose_next_style()
 
     def switch_style(self, style_name):
         previous_sources = self.animation_sources
@@ -736,7 +694,6 @@ class DesktopPet:
         self.is_cursor_attacking = False
         self.path_nodes.clear()
         self.last_path_target = None
-        self.cancel_auto_blocks()
         self.auto_block_interval_range = self.active_personality["build_rate"]
         self.max_blocks = 20
         self.next_free_mood_change_at = time.time() + random.uniform(*self.free_mood_interval_range)
@@ -755,8 +712,6 @@ class DesktopPet:
         self.auto_block_interval_range = (int(base_min * 2.6), int(base_max * 2.8))
         self.max_blocks = 10
         self.block_lifetime_seconds = 14.0
-        if not self.sandbox_mode:
-            self.start_auto_blocks()
         self.vertical_velocity = 0.0
         self.is_in_air = True
         self.on_ground = False
@@ -771,10 +726,7 @@ class DesktopPet:
         print("[Modo] Suelo - Patrón: caminar y dormir")
 
     def start_auto_blocks(self):
-        self.cancel_auto_blocks()
-        self.auto_block_job = self.root.after(
-            random.randint(*self.auto_block_interval_range), self.auto_place_block
-        )
+        return
 
     def cancel_auto_blocks(self):
         if self.auto_block_job is not None:
@@ -782,97 +734,11 @@ class DesktopPet:
             self.auto_block_job = None
 
     def schedule_next_auto_block(self):
-        if self.execution_mode != "platform" or self.is_destroying or self.sandbox_mode:
-            return
-
-        self.auto_block_job = self.root.after(
-            random.randint(*self.auto_block_interval_range), self.auto_place_block
-        )
+        return
 
     def auto_place_block(self):
         self.auto_block_job = None
-
-        if self.execution_mode != "platform" or self.is_destroying or self.sandbox_mode:
-            return
-
-        # Reduce la frecuencia real: no siempre construye cuando vence el temporizador.
-        if random.random() < 0.45:
-            self.schedule_next_auto_block()
-            return
-
-        screen_width = self.root.winfo_screenwidth()
-        floor_y = self.get_floor_y()
-        width, height = self.block_size
-
-        sprite_width, sprite_height = self.get_walking_sprite_size()
-        target_x = self.x + random.randint(-160, 160)
-        target_y = self.y + random.randint(-120, 120)
-        pet_center_x = self.x + sprite_width // 2
-        pet_level = self.get_level_from_y(self.y)
-        target_level = self.get_level_from_y(target_y - sprite_height // 2)
-
-        direction = 1 if target_x >= pet_center_x else -1
-        cursor_above = target_y < (self.y - sprite_height // 4)
-        horizontal_gap = random.randint(width + 4, width + 16)
-        if cursor_above:
-            horizontal_gap = random.randint(width // 2, width + 10)
-
-        desired_level = pet_level
-        if target_level > pet_level:
-            desired_level = pet_level + 1
-        elif target_level < pet_level:
-            desired_level = max(0, pet_level - 1)
-
-        base_x = self.x + direction * horizontal_gap
-        base_x = max(0, min(screen_width - width, base_x))
-        base_y = max(80, floor_y - (desired_level * height))
-
-        if cursor_above:
-            # Prioriza escaleras para subir hacia el cursor.
-            candidate_offsets = [
-                (direction * (width // 2), -height),
-                (direction * (width + 4), -height),
-                (direction * (width // 2), 0),
-                (0, -height),
-                (0, 0),
-            ]
-        else:
-            candidate_offsets = [
-                (0, 0),
-                (direction * (width + 6), 0),
-                (-direction * (width + 6), 0),
-                (0, -height),
-                (0, height),
-            ]
-
-        placed = False
-        for offset_x, offset_y in candidate_offsets:
-            block_x = max(0, min(screen_width - width, base_x + offset_x))
-            block_y = max(80, base_y + offset_y)
-
-            if self.is_harmful_block_candidate(
-                block_x,
-                block_y,
-                width,
-                height,
-                target_y,
-                sprite_width,
-                sprite_height,
-                direction,
-            ):
-                continue
-
-            if not self.is_block_slot_free(block_x, block_y, width, height):
-                continue
-
-            self.create_block(block_x, block_y, cast_from_pet=True)
-            placed = True
-            break
-
-        if not placed:
-            print("[Bloque] Sin espacio util para construir hacia el cursor.")
-
-        self.schedule_next_auto_block()
+        return
 
     def get_level_from_y(self, y):
         floor_y = self.get_floor_y()
@@ -946,6 +812,8 @@ class DesktopPet:
         return True
 
     def create_block(self, block_x, block_y, cast_from_pet=False):
+        if not self.blocks_enabled:
+            return False
         width, height = self.block_size
 
         if not self.is_block_slot_free(block_x, block_y, width, height):
@@ -995,13 +863,7 @@ class DesktopPet:
         return True
 
     def place_block_at_cursor(self):
-        width, height = self.block_size
-        pointer_x, pointer_y = self.root.winfo_pointerxy()
-        block_x = pointer_x - (width // 2)
-        block_y = pointer_y - (height // 2)
-
-        self.cast_spell_effect(pointer_x, pointer_y)
-        self.create_block(block_x, block_y, cast_from_pet=False)
+        return False
 
     def cast_spell_effect(self, center_x, center_y):
         effect_size = 120
@@ -1048,6 +910,8 @@ class DesktopPet:
         animate()
 
     def clear_blocks(self):
+        if not self.blocks:
+            return
         for block in self.blocks:
             try:
                 block["window"].destroy()
@@ -1059,7 +923,7 @@ class DesktopPet:
         print("[Bloque] Limpiados")
 
     def cleanup_expired_blocks(self):
-        if not self.blocks:
+        if not self.blocks_enabled or not self.blocks:
             return
 
         now = time.time()
@@ -1225,7 +1089,7 @@ class DesktopPet:
 
         self.personality_name = personality_name
         self.active_personality = self.personality_profiles[personality_name]
-        if self.execution_mode == "platform":
+        if self.execution_mode == "platform" and self.blocks_enabled:
             base_min, base_max = self.active_personality["build_rate"]
             self.auto_block_interval_range = (int(base_min * 2.6), int(base_max * 2.8))
         else:
@@ -1246,11 +1110,8 @@ class DesktopPet:
         self.last_path_target = None
 
         if self.sandbox_mode:
-            self.cancel_auto_blocks()
-            print("[Sandbox] ON - usa flechas, B para bloque y C para limpiar")
+            print("[Sandbox] ON - usa flechas para mover y salto manual")
         else:
-            if self.execution_mode == "platform":
-                self.start_auto_blocks()
             print("[Sandbox] OFF")
 
     def sandbox_nudge(self, direction):
@@ -1276,71 +1137,22 @@ class DesktopPet:
         self.trigger_jump()
 
     def get_session_runtime_seconds(self):
-        return max(0, int(time.time() - self.session_started_at))
+        return self.state_manager.get_session_runtime_seconds()
 
     def format_seconds(self, total_seconds):
-        total_seconds = max(0, int(total_seconds))
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        return self.state_manager.format_seconds(total_seconds)
 
     def load_assistant_config(self):
-        if not self.assistant_config_file.exists():
-            return
-
-        try:
-            data = json.loads(self.assistant_config_file.read_text(encoding="utf-8"))
-        except Exception:
-            return
-
-        wake = str(data.get("wake_word", self.voice_wake_word)).strip().lower()
-        if wake:
-            self.voice_wake_word = wake
-
-        self.require_wake_word = bool(data.get("require_wake_word", self.require_wake_word))
-
-        level = str(data.get("permission_level", self.permission_level)).strip().lower()
-        if level in self.permission_levels:
-            self.permission_level = level
-
-        llm_enabled_cfg = data.get("llm_enabled")
-        if llm_enabled_cfg is not None:
-            self.llm_enabled = bool(llm_enabled_cfg)
-
-        llm_model_cfg = str(data.get("llm_model", self.llm_model)).strip()
-        if llm_model_cfg:
-            self.llm_model = llm_model_cfg
+        return self.state_manager.load_assistant_config()
 
     def save_assistant_config(self):
-        payload = {
-            "wake_word": self.voice_wake_word,
-            "require_wake_word": self.require_wake_word,
-            "permission_level": self.permission_level,
-            "llm_enabled": self.llm_enabled,
-            "llm_model": self.llm_model,
-        }
-        try:
-            self.assistant_config_file.write_text(
-                json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8"
-            )
-        except Exception:
-            pass
+        return self.state_manager.save_assistant_config()
 
     def has_permission(self, category):
-        if self.permission_level == "full":
-            return True
-        if self.permission_level == "files":
-            return category in ("query", "files", "media")
-        return category == "query"
+        return self.permission_manager.has_permission(category)
 
     def set_permission_level(self, level):
-        normalized = str(level).strip().lower()
-        if normalized not in self.permission_levels:
-            return False
-        self.permission_level = normalized
-        self.save_assistant_config()
-        return True
+        return self.permission_manager.set_permission_level(level)
 
     def strip_wake_word(self, text):
         phrase = (text or "").strip().lower()
@@ -1358,47 +1170,52 @@ class DesktopPet:
         return trimmed
 
     def query_optional_llm(self, user_prompt):
-        if not self.llm_enabled or not self.llm_api_key:
+        if not self.llm_enabled:
             return ""
 
-        system_prompt = (
-            "Eres un asistente de PC en español. Responde breve, clara y útil, "
-            "sin inventar acciones que no puedes ejecutar."
-        )
-        payload = {
-            "model": self.llm_model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0.4,
-        }
-
-        request_body = json.dumps(payload).encode("utf-8")
-        headers = {
-            "Authorization": f"Bearer {self.llm_api_key}",
-            "Content-Type": "application/json",
-        }
-
-        request = urllib.request.Request(
-            self.llm_endpoint,
-            data=request_body,
-            headers=headers,
-            method="POST",
-        )
-
-        try:
-            with urllib.request.urlopen(request, timeout=self.llm_timeout_seconds) as response:
-                raw = response.read().decode("utf-8")
-            parsed = json.loads(raw)
-            choices = parsed.get("choices", [])
-            if not choices:
-                return ""
-            message = choices[0].get("message", {})
-            content = str(message.get("content", "")).strip()
-            return content
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError):
+        if self.llm_offline_only and self.llm_provider != "ollama":
             return ""
+
+        if self.llm_provider == "openai":
+            return self.query_openai_llm(user_prompt)
+        if self.llm_provider == "ollama":
+            return self.query_ollama_llm(user_prompt)
+        return ""
+
+    def build_pet_identity_system_prompt(self):
+        return self.identity_manager.build_pet_identity_system_prompt()
+
+    def query_openai_llm(self, user_prompt):
+        system_prompt = self.build_pet_identity_system_prompt()
+        return self.llm_gateway.query_openai_chat(
+            endpoint=self.llm_endpoint,
+            api_key=self.llm_api_key,
+            model=self.llm_model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            timeout_seconds=self.llm_timeout_seconds,
+        )
+
+    def query_ollama_llm(self, user_prompt):
+        system_prompt = self.build_pet_identity_system_prompt()
+        return self.query_ollama_llm_with_system(system_prompt, user_prompt)
+
+    def query_ollama_llm_with_system(self, system_prompt, user_prompt):
+        return self.llm_gateway.query_ollama_chat(
+            endpoint=self.llm_endpoint,
+            model=self.llm_model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            timeout_seconds=self.llm_timeout_seconds,
+            temperature=0.4,
+            num_ctx=2048,
+        )
+
+    def check_ollama_health(self):
+        return self.llm_gateway.check_ollama_health(self.llm_endpoint, self.llm_timeout_seconds)
+
+    def format_pet_memory(self):
+        return self.identity_manager.format_pet_memory()
 
     def init_hud(self):
         if self.hud_window is not None:
@@ -1468,12 +1285,95 @@ class DesktopPet:
                 self.hud_window.withdraw()
             print("[HUD] OFF")
 
+    def position_chat_window(self):
+        self.chat_controller.position_chat_window()
+
+    def get_ai_mode_badge_text(self):
+        if self.llm_offline_only:
+            return "Modo IA: LOCAL"
+        return "Modo IA: LOCAL + INTERNET"
+
+    def get_chat_header_text(self):
+        return f"{self.pet_name}  |  {self.get_ai_mode_badge_text()}"
+
+    def refresh_chat_header_mode(self):
+        if self.chat_header_label is None or not self.chat_header_label.winfo_exists():
+            return
+        self.chat_header_label.config(text=self.get_chat_header_text())
+
+    def activate_local_ai_mode(self):
+        self.llm_provider = "ollama"
+        self.llm_endpoint = "http://127.0.0.1:11434/api/chat"
+        self.llm_offline_only = True
+        self.llm_enabled = True
+        self.save_assistant_config()
+        self.refresh_chat_header_mode()
+        self.set_chat_status("Modo IA local activado.")
+
+    def activate_cloud_ai_mode(self):
+        self.llm_provider = "openai"
+        self.llm_endpoint = "https://api.openai.com/v1/chat/completions"
+        self.llm_offline_only = False
+        self.llm_enabled = bool(self.llm_api_key)
+        self.save_assistant_config()
+        self.refresh_chat_header_mode()
+        if self.llm_enabled:
+            self.set_chat_status("Modo IA + internet activado.")
+        else:
+            self.set_chat_status("Modo IA + internet sin API key activa.")
+
+    def query_ollama_local_with_system(self, system_prompt, user_prompt):
+        return self.llm_gateway.query_ollama_local_chat(
+            model=self.local_intent_model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            timeout_seconds=self.llm_timeout_seconds,
+        )
+
+    def touch_chat_activity(self):
+        self.chat_controller.touch_chat_activity()
+
+    def close_chat_if_inactive(self):
+        self.chat_controller.close_chat_if_inactive()
+
+    def face_user(self):
+        pointer_x, _pointer_y = self.root.winfo_pointerxy()
+        sprite_width, _sprite_height = self.get_walking_sprite_size()
+        center_x = self.x + sprite_width // 2
+        self.direction_x = 1 if pointer_x >= center_x else -1
+
+    def open_chat_bubble(self):
+        self.chat_controller.open_chat_bubble()
+
+    def close_chat_bubble(self):
+        self.chat_controller.close_chat_bubble()
+
+    def append_chat_message(self, speaker, text):
+        self.chat_controller.append_chat_message(speaker, text)
+
+    def set_chat_status(self, text):
+        self.chat_controller.set_chat_status(text)
+
+    def submit_chat_message(self, _event=None):
+        return self.chat_controller.submit_chat_message(_event)
+
+    def _chat_worker(self, raw_text):
+        self.chat_controller._chat_worker(raw_text)
+
     def sanitize_folder_name(self, raw_name):
-        cleaned = re.sub(r'[<>:"/\\|?*]+', "", raw_name or "")
-        cleaned = cleaned.strip().strip(".")
-        if not cleaned:
-            return ""
-        return cleaned[:80]
+        return self.text_parser.sanitize_folder_name(raw_name)
+
+    def normalize_command_text(self, text):
+        return self.text_parser.normalize_command_text(text)
+
+    def extract_json_object(self, raw_text):
+        return self.text_parser.extract_json_object(raw_text)
+
+    def interpret_local_action(self, raw_command):
+        return self.command_handler.interpret_local_action(raw_command)
+
+    def extract_folder_name_from_command(self, command):
+        return self.text_parser.extract_folder_name_from_command(command)
 
     def is_allowed_path(self, target_path):
         try:
@@ -1490,319 +1390,55 @@ class DesktopPet:
         return False
 
     def can_run_system_action(self, bypass_cooldown=False):
-        now = time.time()
-        if (not bypass_cooldown) and now < self.system_action_cooldown_until:
-            print("[PC] Espera un momento antes de otra accion.")
-            return False
-
-        if not bypass_cooldown:
-            self.system_action_cooldown_until = now + self.system_action_cooldown_seconds
-        return True
+        return self.action_manager.can_run_system_action(bypass_cooldown)
 
     def append_action_log(self, action, detail, status):
-        payload = {
-            "timestamp": int(time.time()),
-            "action": action,
-            "detail": detail,
-            "status": status,
-        }
+        self.action_manager.append_action_log(action, detail, status)
 
-        entries = []
-        if self.action_log_file.exists():
-            try:
-                entries = json.loads(self.action_log_file.read_text(encoding="utf-8"))
-            except Exception:
-                entries = []
+    def load_action_log_entries(self):
+        return self.action_manager.load_action_log_entries()
 
-        if not isinstance(entries, list):
-            entries = []
+    def format_recent_actions(self, limit=6):
+        return self.action_manager.format_recent_actions(limit)
 
-        entries.append(payload)
-        if len(entries) > self.max_action_log_entries:
-            entries = entries[-self.max_action_log_entries :]
+    def is_affirmative_command(self, command):
+        return self.action_manager.is_affirmative_command(command)
 
-        try:
-            self.action_log_file.write_text(json.dumps(entries, ensure_ascii=True, indent=2), encoding="utf-8")
-        except Exception:
-            pass
+    def is_negative_command(self, command):
+        return self.action_manager.is_negative_command(command)
+
+    def has_active_pending_action(self):
+        return self.action_manager.has_active_pending_action()
+
+    def queue_pending_action(self, action_name, args, description):
+        return self.action_manager.queue_pending_action(action_name, args, description)
+
+    def execute_pending_action(self):
+        return self.action_manager.execute_pending_action()
+
+    def looks_like_system_request(self, command):
+        return self.action_manager.looks_like_system_request(command)
 
     def prompt_create_desktop_folder(self):
-        if not self.can_run_system_action():
-            return
-
-        name = simpledialog.askstring(
-            "Crear Carpeta",
-            "Nombre de la nueva carpeta en el Escritorio:",
-            parent=self.root,
-        )
-        if not name:
-            return
-
-        safe_name = self.sanitize_folder_name(name)
-        if not safe_name:
-            messagebox.showwarning("Nombre invalido", "Usa un nombre valido para carpeta.", parent=self.root)
-            return
-
-        target = self.desktop_path / safe_name
-        if not self.is_allowed_path(target):
-            self.append_action_log("create_folder", str(target), "blocked")
-            return
-
-        confirm = messagebox.askyesno(
-            "Confirmar",
-            f"Crear carpeta:\n{target}",
-            parent=self.root,
-        )
-        if not confirm:
-            self.append_action_log("create_folder", str(target), "cancelled")
-            return
-
-        self.create_desktop_folder(safe_name, auto=False)
+        self.action_manager.prompt_create_desktop_folder()
 
     def create_desktop_folder(self, folder_name, auto=False):
-        if not self.has_permission("files"):
-            self.append_action_log("create_folder", folder_name, "blocked-permission")
-            return False
-
-        safe_name = self.sanitize_folder_name(folder_name)
-        if not safe_name:
-            return False
-
-        target = self.desktop_path / safe_name
-        if not self.is_allowed_path(target):
-            self.append_action_log("create_folder", str(target), "blocked")
-            return False
-
-        try:
-            target.mkdir(parents=False, exist_ok=False)
-            self.stats["pc_actions"] += 1
-            self.append_action_log("create_folder", str(target), "ok")
-            if auto:
-                print(f"[Asistente] Carpeta creada automaticamente: {target.name}")
-            else:
-                print(f"[PC] Carpeta creada: {target.name}")
-            return True
-        except FileExistsError:
-            self.append_action_log("create_folder", str(target), "exists")
-            if not auto:
-                messagebox.showinfo("Existe", "Esa carpeta ya existe.", parent=self.root)
-        except Exception as error:
-            self.append_action_log("create_folder", str(target), f"error:{error}")
-            if not auto:
-                messagebox.showerror("Error", f"No se pudo crear la carpeta.\n{error}", parent=self.root)
-
-        return False
+        return self.action_manager.create_desktop_folder(folder_name, auto)
 
     def prompt_archive_desktop_item(self):
-        if not self.can_run_system_action():
-            return
-
-        item_name = simpledialog.askstring(
-            "Archivar En Escritorio",
-            "Nombre del archivo/carpeta del Escritorio a mover:",
-            parent=self.root,
-        )
-        if not item_name:
-            return
-
-        safe_name = self.sanitize_folder_name(item_name)
-        if not safe_name:
-            messagebox.showwarning("Nombre invalido", "No se pudo interpretar el nombre.", parent=self.root)
-            return
-
-        self.archive_desktop_item(safe_name, auto=False)
+        self.action_manager.prompt_archive_desktop_item()
 
     def archive_desktop_item(self, item_name, auto=False):
-        if not self.has_permission("files"):
-            self.append_action_log("archive_item", item_name, "blocked-permission")
-            return False
-
-        safe_name = self.sanitize_folder_name(item_name)
-        if not safe_name:
-            return False
-
-        source = self.desktop_path / safe_name
-        archive_dir = self.desktop_path / self.archive_folder_name
-        destination = archive_dir / safe_name
-
-        if not self.is_allowed_path(source) or not self.is_allowed_path(destination):
-            self.append_action_log("archive_item", str(source), "blocked")
-            return False
-
-        if not source.exists():
-            self.append_action_log("archive_item", str(source), "missing")
-            if not auto:
-                messagebox.showinfo("No encontrado", "No existe ese archivo/carpeta en el Escritorio.", parent=self.root)
-            return False
-
-        if not auto:
-            confirm = messagebox.askyesno(
-                "Confirmar",
-                f"Mover a '{self.archive_folder_name}':\n{source.name}",
-                parent=self.root,
-            )
-            if not confirm:
-                self.append_action_log("archive_item", str(source), "cancelled")
-                return False
-
-        try:
-            archive_dir.mkdir(parents=True, exist_ok=True)
-            suffix = 1
-            while destination.exists():
-                destination = archive_dir / f"{safe_name}_{suffix}"
-                suffix += 1
-
-            shutil.move(str(source), str(destination))
-            self.stats["pc_actions"] += 1
-            self.append_action_log("archive_item", f"{source} -> {destination}", "ok")
-            if auto:
-                print(f"[Asistente] Elemento archivado automaticamente: {source.name}")
-            else:
-                print(f"[PC] Elemento archivado: {source.name}")
-            return True
-        except Exception as error:
-            self.append_action_log("archive_item", str(source), f"error:{error}")
-            if not auto:
-                messagebox.showerror("Error", f"No se pudo mover el elemento.\n{error}", parent=self.root)
-            return False
+        return self.action_manager.archive_desktop_item(item_name, auto)
 
     def control_media_key(self, action, auto=False):
-        if not self.has_permission("media"):
-            self.append_action_log("media_key", action, "blocked-permission")
-            return
-
-        if not auto and not self.can_run_system_action():
-            return
-
-        key_map = {
-            "play_pause": 0xB3,
-            "next": 0xB0,
-            "prev": 0xB1,
-        }
-
-        vk = key_map.get(action)
-        if vk is None:
-            return
-
-        if os.name != "nt":
-            self.append_action_log("media_key", action, "unsupported-os")
-            return
-
-        if not auto:
-            confirm = messagebox.askyesno(
-                "Confirmar",
-                f"Enviar accion multimedia: {action}",
-                parent=self.root,
-            )
-            if not confirm:
-                self.append_action_log("media_key", action, "cancelled")
-                return
-
-        try:
-            user32 = ctypes.windll.user32
-            user32.keybd_event(vk, 0, 0, 0)
-            user32.keybd_event(vk, 0, 2, 0)
-            self.stats["pc_actions"] += 1
-            self.append_action_log("media_key", action, "ok")
-            print(f"[PC] Media key enviada: {action}")
-        except Exception as error:
-            self.append_action_log("media_key", action, f"error:{error}")
-            messagebox.showerror("Error", f"No se pudo enviar la tecla multimedia.\n{error}", parent=self.root)
+        self.action_manager.control_media_key(action, auto)
 
     def save_pet_state(self):
-        try:
-            self.stats["total_runtime_seconds"] += self.get_session_runtime_seconds()
-            self.session_started_at = time.time()
-            self.stats["saves"] += 1
-
-            data = {
-                "version": 1,
-                "x": int(self.x),
-                "y": int(self.y),
-                "state": self.state,
-                "style": self.current_style,
-                "mode": self.execution_mode,
-                "personality": self.personality_name,
-                "sandbox_mode": self.sandbox_mode,
-                "needs": self.needs,
-                "stats": self.stats,
-                "blocks": [
-                    {
-                        "x": int(block["x"]),
-                        "y": int(block["y"]),
-                        "w": int(block["w"]),
-                        "h": int(block["h"]),
-                    }
-                    for block in self.blocks
-                ],
-            }
-            self.save_file.write_text(json.dumps(data, ensure_ascii=True, indent=2), encoding="utf-8")
-            print(f"[Save] Estado guardado en {self.save_file.name}")
-        except Exception as error:
-            print(f"[Save] Error guardando estado: {error}")
+        return self.state_manager.save_pet_state()
 
     def load_pet_state(self, quiet=False):
-        if not self.save_file.exists():
-            if not quiet:
-                print("[Load] No existe archivo de guardado.")
-            return
-
-        try:
-            data = json.loads(self.save_file.read_text(encoding="utf-8"))
-
-            style = data.get("style", self.current_style)
-            if style in self.available_styles and style != self.current_style:
-                self.switch_style(style)
-
-            self.apply_personality(data.get("personality", self.personality_name))
-            self.sandbox_mode = bool(data.get("sandbox_mode", self.sandbox_mode))
-
-            loaded_needs = data.get("needs", {})
-            for key in self.needs:
-                if key in loaded_needs:
-                    self.needs[key] = self.clamp_need(loaded_needs[key])
-
-            loaded_stats = data.get("stats", {})
-            for key in self.stats:
-                if key in loaded_stats:
-                    self.stats[key] = max(0, int(loaded_stats[key]))
-
-            mode = data.get("mode", self.execution_mode)
-            if mode == "platform":
-                self.set_mode_platform()
-            else:
-                self.set_mode_free()
-
-            sprite_width, sprite_height = self.get_walking_sprite_size()
-            screen_width = self.root.winfo_screenwidth()
-            screen_height = self.root.winfo_screenheight()
-            self.x = max(0, min(screen_width - sprite_width, int(data.get("x", self.x))))
-            self.y = max(0, min(screen_height - sprite_height, int(data.get("y", self.y))))
-            self.base_y = self.y
-
-            self.clear_blocks()
-            for block in data.get("blocks", []):
-                bx = int(block.get("x", 0))
-                by = int(block.get("y", 0))
-                self.create_block(bx, by, cast_from_pet=False)
-
-            loaded_state = data.get("state", "walking")
-            if loaded_state in ("walking", "idle", "listening", "jump", "dead"):
-                self.state = loaded_state
-            else:
-                self.state = "walking"
-
-            self.root.geometry(f"+{self.x}+{self.y}")
-            self.path_nodes.clear()
-            self.last_path_target = None
-            self.stats["loads"] += 1
-            self.session_started_at = time.time()
-            self.update_hud()
-
-            if not quiet:
-                print(f"[Load] Estado cargado desde {self.save_file.name}")
-        except Exception as error:
-            print(f"[Load] Error cargando estado: {error}")
+        return self.state_manager.load_pet_state(quiet=quiet)
 
     def get_support_y_for_x(self, x, sprite_width, sprite_height, reference_y=None):
         floor_y = self.get_floor_y()
@@ -1994,6 +1630,14 @@ class DesktopPet:
             self.root.after(40, self.move)
             return
 
+        # Mientras el chat esta abierto, la mascota permanece quieta y atenta.
+        if self.chat_window is not None and self.chat_window.winfo_exists():
+            if self.state != "listening":
+                self.set_listening()
+            self.root.geometry(f"+{self.x}+{self.y}")
+            self.root.after(40, self.move)
+            return
+
         if self.execution_mode == "platform":
             self.move_platform()
             self.root.after(40, self.move)
@@ -2009,10 +1653,8 @@ class DesktopPet:
             self.move_walking()
 
         elif self.state == "listening":
-            # Pequeña vibración
-            self.root.geometry(
-                f"+{self.x + random.randint(-3,3)}+{self.y + random.randint(-3,3)}"
-            )
+            self.face_user()
+            self.root.geometry(f"+{self.x}+{self.y}")
 
         elif self.state == "idle":
             self.hunt_flies_idle()
@@ -2101,6 +1743,21 @@ class DesktopPet:
         sprite_width, sprite_height = self.get_walking_sprite_size()
 
         screen_width = self.root.winfo_screenwidth()
+
+        if self.state == "listening":
+            self.face_user()
+            support_y = self.find_support_y(self.x, self.y, sprite_width, sprite_height)
+            if self.y < support_y:
+                self.vertical_velocity = min(self.max_fall_speed, self.vertical_velocity + self.gravity)
+                self.y = min(support_y, self.y + int(self.vertical_velocity))
+            else:
+                self.y = support_y
+                self.base_y = self.y
+                self.vertical_velocity = 0.0
+                self.on_ground = True
+                self.is_in_air = False
+            self.root.geometry(f"+{self.x}+{self.y}")
+            return
 
         # En modo suelo alterna entre caminar y dormir.
         if now >= self.next_platform_behavior_change:
@@ -2316,6 +1973,8 @@ class DesktopPet:
 
     def set_listening(self):
         self.state = "listening"
+        self.is_running = False
+        self.face_user()
 
     def toggle_state_cycle(self):
         if self.state == "walking":
@@ -2493,198 +2152,19 @@ class DesktopPet:
 
     # ---------------- VOZ ----------------
     def start_listening(self):
-        self.set_listening()
-
-        if not VOICE_AVAILABLE:
-            if not self.voice_warning_shown:
-                print("[Aviso] speech_recognition/pyttsx3 no disponibles en el entorno.")
-                self.voice_warning_shown = True
-            self.root.after(1200, self.set_walking)
-            return
-
-        if self.listening_thread and self.listening_thread.is_alive():
-            return
-
-        self.listening_thread = threading.Thread(target=self._listen_worker, daemon=True)
-        self.listening_thread.start()
+        self.voice_manager.start_listening()
 
     def _listen_worker(self):
-        recognizer = sr.Recognizer()
-
-        try:
-            with sr.Microphone() as source:
-                recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                audio = recognizer.listen(source, timeout=4, phrase_time_limit=4)
-
-            text = recognizer.recognize_google(audio, language="es-ES").lower()
-            print(f"[Escuchado] {text}")
-            normalized = self.strip_wake_word(text)
-            if self.require_wake_word and not normalized:
-                print("[Asistente] Wake word no detectada; ignoro comando.")
-                return
-
-            response = self.handle_voice_or_text_command(normalized or text)
-            if response:
-                print(f"[Asistente] {response}")
-                self._speak(response)
-        except Exception as error:
-            print(f"[Escucha] {error}")
-        finally:
-            self.ui_queue.put(("set_state", "walking"))
+        self.voice_manager.listen_worker()
 
     def handle_voice_or_text_command(self, text):
-        command = (text or "").strip().lower()
-        if not command:
-            return "No escuche un comando claro."
-
-        if "activar palabra clave" in command:
-            self.require_wake_word = True
-            self.save_assistant_config()
-            return f"Palabra clave activada: {self.voice_wake_word}."
-
-        if "desactivar palabra clave" in command:
-            self.require_wake_word = False
-            self.save_assistant_config()
-            return "Palabra clave desactivada temporalmente."
-
-        if command.startswith("palabra clave "):
-            new_wake = self.sanitize_folder_name(command.replace("palabra clave ", "", 1)).lower()
-            if not new_wake:
-                return "No detecte una palabra clave valida."
-            self.voice_wake_word = new_wake
-            self.save_assistant_config()
-            return f"Nueva palabra clave configurada: {self.voice_wake_word}."
-
-        if "permiso consulta" in command:
-            self.set_permission_level("query")
-            return "Permiso cambiado a consulta."
-
-        if "permiso archivos" in command:
-            self.set_permission_level("files")
-            return "Permiso cambiado a archivos."
-
-        if "permiso completo" in command:
-            self.set_permission_level("full")
-            return "Permiso cambiado a completo."
-
-        if "activar ia" in command or "activar llm" in command:
-            self.llm_enabled = True
-            self.save_assistant_config()
-            return "IA conversacional activada."
-
-        if "desactivar ia" in command or "desactivar llm" in command:
-            self.llm_enabled = False
-            self.save_assistant_config()
-            return "IA conversacional desactivada."
-
-        if "que hora" in command or "hora es" in command:
-            now = time.strftime("%H:%M")
-            return f"Son las {now}."
-
-        if "como estas" in command or "como te sientes" in command:
-            avg_needs = sum(self.needs.values()) / max(1, len(self.needs))
-            if avg_needs >= 70:
-                return "Estoy muy bien y lista para ayudarte."
-            if avg_needs >= 45:
-                return "Estoy estable, puedo seguir trabajando."
-            return "Estoy algo cansada, pero aun puedo ayudar."
-
-        if "quien eres" in command or "que eres" in command:
-            return "Soy tu asistente de PC y tambien conservo comportamientos de mascota."
-
-        if command.startswith("crea carpeta "):
-            if not self.has_permission("files"):
-                return "Tu nivel de permisos actual no permite crear carpetas."
-            folder_name = command.replace("crea carpeta ", "", 1).strip()
-            if self.create_desktop_folder(folder_name, auto=True):
-                return f"Carpeta {folder_name} creada en tu escritorio."
-            return "No pude crear esa carpeta."
-
-        if command.startswith("archiva "):
-            if not self.has_permission("files"):
-                return "Tu nivel de permisos actual no permite archivar elementos."
-            item_name = command.replace("archiva ", "", 1).strip()
-            if self.archive_desktop_item(item_name, auto=True):
-                return f"Elemento {item_name} movido a archivado."
-            return "No pude archivar ese elemento."
-
-        if "siguiente cancion" in command or "siguiente canción" in command:
-            if not self.has_permission("media"):
-                return "Tu nivel de permisos actual no permite controlar multimedia."
-            self.control_media_key("next", auto=True)
-            return "Envie siguiente cancion."
-
-        if "cancion anterior" in command or "canción anterior" in command:
-            if not self.has_permission("media"):
-                return "Tu nivel de permisos actual no permite controlar multimedia."
-            self.control_media_key("prev", auto=True)
-            return "Envie cancion anterior."
-
-        if "pausa musica" in command or "pausar musica" in command or "play pausa" in command:
-            if not self.has_permission("media"):
-                return "Tu nivel de permisos actual no permite controlar multimedia."
-            self.control_media_key("play_pause", auto=True)
-            return "Alternando reproduccion de musica."
-
-        if "modo libre" in command:
-            self.set_mode_free()
-            return "Modo libre activado."
-
-        if "modo suelo" in command:
-            self.set_mode_platform()
-            return "Modo suelo activado."
-
-        if "persigue cursor" in command or "sigue cursor" in command:
-            self.free_mood = "feliz"
-            self.next_free_mood_change_at = time.time() + random.uniform(*self.free_mood_interval_range)
-            return "De acuerdo, perseguire el cursor."
-
-        if "huye cursor" in command or "escapa cursor" in command:
-            self.free_mood = "brava"
-            self.next_free_mood_change_at = time.time() + random.uniform(*self.free_mood_interval_range)
-            return "Entendido, me alejare del cursor."
-
-        if "ayuda" in command or "que puedes hacer" in command:
-            return (
-                "Puedo responder preguntas simples, cambiar modo, controlar musica, crear carpetas, "
-                "archivar elementos y cuidarme sola cuando lo necesito."
-            )
-
-        if "hola" in command:
-            return "Hola, estoy lista para asistirte."
-
-        if self.llm_enabled and self.has_permission("query"):
-            llm_response = self.query_optional_llm(command)
-            if llm_response:
-                return llm_response
-
-        return "No entendi ese comando todavia, pero puedo aprender mas funciones."
+        return self.command_handler.handle(text)
 
     def _speak(self, text):
-        if not VOICE_AVAILABLE:
-            return
-        try:
-            engine = pyttsx3.init()
-            engine.setProperty("rate", 180)
-            engine.say(text)
-            engine.runAndWait()
-        except Exception as error:
-            print(f"[Voz] {error}")
+        self.voice_manager.speak(text)
 
     def process_ui_queue(self):
-        if self.is_destroying:
-            return
-
-        while True:
-            try:
-                action, payload = self.ui_queue.get_nowait()
-            except queue.Empty:
-                break
-
-            if action == "set_state":
-                self.state = payload
-
-        self.root.after(120, self.process_ui_queue)
+        self.ui_event_controller.process_ui_queue()
 
 if __name__ == "__main__":
     root = tk.Tk()
