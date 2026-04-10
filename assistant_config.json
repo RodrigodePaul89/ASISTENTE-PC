@@ -1,6 +1,10 @@
 {
   "wake_word": "asistente",
   "require_wake_word": true,
+  "voice_realtime_enabled": false,
+  "voice_response_enabled": true,
+  "voice_phrase_timeout_seconds": 2,
+  "voice_phrase_max_seconds": 5,
   "permission_level": "full",
   "llm_enabled": true,
   "llm_provider": "ollama",
@@ -14,47 +18,11 @@
   "chat_transcript": [
     [
       "Mascota",
-      "Chat local listo. Puedes escribirme aqui."
-    ],
-    [
-      "Tu",
-      "hola Mimi como estas"
+      "Chat local limpio. \u00bfEn que te ayudo ahora?"
     ],
     [
       "Mascota",
-      "Estoy muy bien y lista para ayudarte."
-    ],
-    [
-      "Tu",
-      "puedes abrir el explorador de archivos de mi computador?"
-    ],
-    [
-      "Mascota",
-      "Entendi esto: abrir la aplicacion el explorador de archivos de mi computador. Estas seguro de realizar el cambio especificado?, si/no."
-    ],
-    [
-      "Tu",
-      "si"
-    ],
-    [
-      "Mascota",
-      "No pude completar esto: abrir la aplicacion el explorador de archivos de mi computador."
-    ],
-    [
-      "Tu",
-      "puedes ver en que pestalla te encuentras?"
-    ],
-    [
-      "Mascota",
-      "No entendi ese comando todavia, pero puedo aprender mas funciones."
-    ],
-    [
-      "Tu",
-      "donde estas?"
-    ],
-    [
-      "Mascota",
-      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+      "Historial de chat limpiado."
     ],
     [
       "Tu",
@@ -66,7 +34,7 @@
     ],
     [
       "Tu",
-      "saul es gey?"
+      "hl"
     ],
     [
       "Mascota",
@@ -74,23 +42,15 @@
     ],
     [
       "Tu",
-      "hola como estas?"
+      "you are my friend?"
     ],
     [
       "Mascota",
-      "Estoy estable, puedo seguir trabajando."
+      "No detecte que aplicacion abrir."
     ],
     [
       "Tu",
-      "carpeta +daivd es gey"
-    ],
-    [
-      "Mascota",
-      "Estructura creada en escritorio: crea carpeta daivd es gey."
-    ],
-    [
-      "Tu",
-      "web +unimayor.edu.co"
+      "pon una cancion en yutu"
     ],
     [
       "Mascota",
@@ -98,11 +58,27 @@
     ],
     [
       "Tu",
-      "web +gmail.com"
+      "elimina la carpeta"
     ],
     [
       "Mascota",
-      "Entendi esto: abrir el sitio gmail.com. Estas seguro de realizar el cambio especificado?, si/no."
+      "Entendi esto: eliminar la carpeta del escritorio. Estas seguro de realizar el cambio especificado?, si/no."
+    ],
+    [
+      "Tu",
+      "no"
+    ],
+    [
+      "Mascota",
+      "Cancelado: eliminar la carpeta del escritorio."
+    ],
+    [
+      "Tu",
+      "elimina la carpeta \"ivanesgey\" del escritorio"
+    ],
+    [
+      "Mascota",
+      "Entendi esto: eliminar la carpeta ivanesgey del escritorio del escritorio. Estas seguro de realizar el cambio especificado?, si/no."
     ],
     [
       "Tu",
@@ -110,31 +86,15 @@
     ],
     [
       "Mascota",
-      "Listo. abrir el sitio gmail.com."
+      "No pude completar esto: eliminar la carpeta ivanesgey del escritorio del escritorio."
     ],
     [
       "Tu",
-      "abrir +whatsapp"
+      "app +wasa"
     ],
     [
       "Mascota",
-      "No entendi ese comando todavia, pero puedo aprender mas funciones."
-    ],
-    [
-      "Tu",
-      "app +whatsapp"
-    ],
-    [
-      "Mascota",
-      "No entendi ese comando todavia, pero puedo aprender mas funciones."
-    ],
-    [
-      "Tu",
-      "bloquea"
-    ],
-    [
-      "Mascota",
-      "Entendi esto: bloquear la sesion de Windows. Estas seguro de realizar el cambio especificado?, si/no."
+      "Entendi esto: abrir la aplicacion wasa. Estas seguro de realizar el cambio especificado?, si/no."
     ],
     [
       "Tu",
@@ -142,7 +102,23 @@
     ],
     [
       "Mascota",
-      "Listo. bloquear la sesion de Windows."
+      "No pude completar esto: abrir la aplicacion wasa."
+    ],
+    [
+      "Tu",
+      "app +code"
+    ],
+    [
+      "Mascota",
+      "Entendi esto: abrir la aplicacion code. Estas seguro de realizar el cambio especificado?, si/no."
+    ],
+    [
+      "Tu",
+      "si"
+    ],
+    [
+      "Mascota",
+      "Listo. abrir la aplicacion code."
     ]
   ]
 }

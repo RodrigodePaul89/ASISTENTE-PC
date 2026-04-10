@@ -223,6 +223,10 @@ class DesktopPet:
         self.autocare_cooldowns = {"feed": 0.0, "play": 0.0, "rest": 0.0}
         self.voice_wake_word = "asistente"
         self.require_wake_word = True
+        self.voice_realtime_enabled = False
+        self.voice_response_enabled = True
+        self.voice_phrase_timeout_seconds = 2
+        self.voice_phrase_max_seconds = 5
         self.permission_level = "full"  # query | files | full
         self.permission_levels = ("query", "files", "full")
         self.permission_manager = PermissionManager(self)
@@ -302,6 +306,8 @@ class DesktopPet:
         self.menu.add_command(label="🕹️ Modo Suelo", command=self.set_mode_platform)
         self.menu.add_command(label="💬 Chat", command=self.open_chat_bubble)
         self.menu.add_command(label="🎤 Escuchar", command=self.start_listening)
+        self.menu.add_command(label="🟢 Voz continua ON", command=self.start_realtime_listening)
+        self.menu.add_command(label="⛔ Voz continua OFF", command=self.stop_realtime_listening)
         self.menu.add_separator()
         self.menu.add_command(label="⏯️ Musica play/pausa", command=lambda: self.control_media_key("play_pause"))
         self.menu.add_command(label="⏭️ Siguiente cancion", command=lambda: self.control_media_key("next"))
@@ -311,7 +317,9 @@ class DesktopPet:
         self.menu.add_command(label="🔒 IA Local (solo Ollama)", command=self.activate_local_ai_mode)
         self.menu.add_command(label="🌐 IA + Internet", command=self.activate_cloud_ai_mode)
         self.menu.add_separator()
-        self.menu.add_command(label="❌ Salir", command=self.root.destroy)
+        self.menu.add_command(label="❌ Salir", command=self.on_app_close)
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_app_close)
 
         self.root.bind_all("<Left>", lambda _event: self.sandbox_nudge(-1))
         self.root.bind_all("<Right>", lambda _event: self.sandbox_nudge(1))
@@ -331,6 +339,8 @@ class DesktopPet:
         self.schedule_assistant_autonomy()
         self.schedule_needs_tick()
         self.schedule_auto_color_change()
+        if self.voice_realtime_enabled:
+            self.start_realtime_listening()
 
     def discover_available_styles(self):
         return self.design_manager.discover_available_styles()
@@ -2094,6 +2104,8 @@ class DesktopPet:
         self.has_exploded = True
         self.is_destroying = True
 
+        self.voice_manager.stop_continuous_listening()
+
         self.clear_blocks()
         self.cancel_auto_blocks()
         if self.hud_job is not None:
@@ -2154,6 +2166,17 @@ class DesktopPet:
     def start_listening(self):
         self.voice_manager.start_listening()
 
+    def start_realtime_listening(self):
+        ok = self.voice_manager.start_continuous_listening()
+        if ok:
+            self.set_chat_status("Voz continua activada.")
+        else:
+            self.set_chat_status("No pude activar voz continua en este entorno.")
+
+    def stop_realtime_listening(self):
+        self.voice_manager.stop_continuous_listening()
+        self.set_chat_status("Voz continua desactivada.")
+
     def _listen_worker(self):
         self.voice_manager.listen_worker()
 
@@ -2162,6 +2185,14 @@ class DesktopPet:
 
     def _speak(self, text):
         self.voice_manager.speak(text)
+
+    def on_app_close(self):
+        if self.is_destroying:
+            return
+        self.is_destroying = True
+        self.voice_manager.stop_continuous_listening()
+        self.save_assistant_config()
+        self.root.destroy()
 
     def process_ui_queue(self):
         self.ui_event_controller.process_ui_queue()

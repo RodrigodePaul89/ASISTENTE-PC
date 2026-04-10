@@ -27,6 +27,28 @@ class PetStateManager:
 
         self.pet.require_wake_word = bool(data.get("require_wake_word", self.pet.require_wake_word))
 
+        voice_realtime_cfg = data.get("voice_realtime_enabled")
+        if voice_realtime_cfg is not None:
+            self.pet.voice_realtime_enabled = bool(voice_realtime_cfg)
+
+        voice_response_cfg = data.get("voice_response_enabled")
+        if voice_response_cfg is not None:
+            self.pet.voice_response_enabled = bool(voice_response_cfg)
+
+        timeout_cfg = data.get("voice_phrase_timeout_seconds")
+        if timeout_cfg is not None:
+            try:
+                self.pet.voice_phrase_timeout_seconds = max(1, int(timeout_cfg))
+            except Exception:
+                pass
+
+        max_phrase_cfg = data.get("voice_phrase_max_seconds")
+        if max_phrase_cfg is not None:
+            try:
+                self.pet.voice_phrase_max_seconds = max(2, int(max_phrase_cfg))
+            except Exception:
+                pass
+
         level = str(data.get("permission_level", self.pet.permission_level)).strip().lower()
         if level in self.pet.permission_levels:
             self.pet.permission_level = level
@@ -88,6 +110,10 @@ class PetStateManager:
         payload = {
             "wake_word": self.pet.voice_wake_word,
             "require_wake_word": self.pet.require_wake_word,
+            "voice_realtime_enabled": self.pet.voice_realtime_enabled,
+            "voice_response_enabled": self.pet.voice_response_enabled,
+            "voice_phrase_timeout_seconds": self.pet.voice_phrase_timeout_seconds,
+            "voice_phrase_max_seconds": self.pet.voice_phrase_max_seconds,
             "permission_level": self.pet.permission_level,
             "llm_enabled": self.pet.llm_enabled,
             "llm_provider": self.pet.llm_provider,

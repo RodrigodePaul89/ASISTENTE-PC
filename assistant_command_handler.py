@@ -1,6 +1,7 @@
 import random
 import re
 import time
+from difflib import SequenceMatcher
 
 
 class AssistantCommandHandler:
@@ -35,6 +36,7 @@ class AssistantCommandHandler:
 
         patterns = (
             r"(?:renombra|cambia nombre)\s+(.+?)\s+(?:a|por)\s+(.+)$",
+            r"(?:pon(?:le)?\s+de\s+nombre)\s+(.+?)\s+(?:a|por)\s+(.+)$",
             r"(?:rename)\s+(.+?)\s+(?:to)\s+(.+)$",
         )
         for pattern in patterns:
@@ -52,7 +54,7 @@ class AssistantCommandHandler:
         if not normalized:
             return "", ""
 
-        match = re.search(r"(?:mueve|move)\s+(.+?)\s+(?:a|al|hacia)\s+(.+)$", normalized)
+        match = re.search(r"(?:mueve|move|manda|lleva|pon)\s+(.+?)\s+(?:a|al|hacia|dentro de)\s+(.+)$", normalized)
         if not match:
             return "", ""
 
@@ -69,14 +71,69 @@ class AssistantCommandHandler:
             r"(?:recordatorio|recu[eé]rdame|recuerdame)\s*(?:en)?\s*(\d+)\s*(segundos?|minutos?|horas?)\s*(.*)$",
             normalized,
         )
-        if not pattern:
+        if pattern:
+            value = pattern.group(1)
+            unit = pattern.group(2)
+            message = pattern.group(3).strip(" .,:;!?") or "Recordatorio"
+            seconds = self.owner.action_manager._parse_time_to_seconds(value, unit)
+            return seconds, message
+
+        # Forma alternativa: "recuérdame tomar agua en 10 minutos"
+        pattern_alt = re.search(
+            r"(?:recordatorio|recu[eé]rdame|recuerdame)\s+(.+?)\s+(?:en)\s+(\d+)\s*(segundos?|minutos?|horas?)$",
+            normalized,
+        )
+        if not pattern_alt:
             return 0, ""
 
-        value = pattern.group(1)
-        unit = pattern.group(2)
-        message = pattern.group(3).strip(" .,:;!?") or "Recordatorio"
+        message = pattern_alt.group(1).strip(" .,:;!?") or "Recordatorio"
+        value = pattern_alt.group(2)
+        unit = pattern_alt.group(3)
         seconds = self.owner.action_manager._parse_time_to_seconds(value, unit)
         return seconds, message
+
+    def _extract_open_target(self, raw_command):
+        markers = ("abre", "abrir", "abreme", "ábreme", "inicia", "ejecuta", "lanza", "abrime")
+        target = self._extract_after_markers(raw_command, markers)
+        return target.strip(" .,:;!?")
+
+    def _resolve_style_name(self, raw_command):
+        available = list(getattr(self.owner, "available_styles", []))
+        if not available:
+            return ""
+
+        normalized = self.owner.normalize_command_text(raw_command)
+        markers = ("usar estilo", "cambiar estilo", "pon estilo", "estilo")
+        candidate = ""
+        for marker in markers:
+            if normalized.startswith(marker):
+                index = len(marker)
+                candidate = normalized[index:].strip(" .,:;!?")
+                break
+
+        if not candidate:
+            return ""
+
+        for style in available:
+            if self.owner.normalize_command_text(style) == candidate:
+                return style
+
+        best_style = ""
+        best_ratio = 0.0
+        for style in available:
+            style_key = self.owner.normalize_command_text(style)
+            if not style_key:
+                continue
+            ratio = SequenceMatcher(None, candidate, style_key).ratio()
+            if candidate in style_key or style_key in candidate:
+                ratio = max(ratio, 0.92)
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_style = style
+
+        if best_ratio >= 0.72:
+            return best_style
+        return ""
 
     def interpret_local_action(self, raw_command):
         if not self.owner.llm_enabled:
@@ -87,13 +144,14 @@ class AssistantCommandHandler:
             "Debes devolver solo JSON valido sin explicaciones. "
             "Acciones permitidas: create_folder, archive_item, media_next, media_prev, media_play_pause, "
             "mode_free, mode_platform, ollama_status, ollama_test, permission_query, permission_files, "
-            "permission_full, llm_enable, llm_disable, llm_mode_local, llm_mode_cloud, set_model, none. "
+            "permission_full, llm_enable, llm_disable, llm_mode_local, llm_mode_cloud, set_model, open_app, open_website, none. "
             "Usa el formato exacto: {\"action\":\"...\",\"args\":{}}. "
             "Si el mensaje no pide una accion local concreta o faltan datos, responde {\"action\":\"none\",\"args\":{}}. "
             "No conviertas preguntas conversacionales o personales en acciones del sistema. "
             "Solo devuelve una accion si el usuario esta pidiendo claramente que ejecutes algo en el PC. "
             "Corrige espacios de mas, acentos, y errores leves de escritura. "
-            "Para create_folder usa args.folder_name. Para archive_item usa args.item_name. Para set_model usa args.model."
+            "Para create_folder usa args.folder_name. Para archive_item usa args.item_name. Para set_model usa args.model. "
+            "Para open_app usa args.app_name. Para open_website usa args.url."
         )
 
         response = self.owner.query_ollama_local_with_system(system_prompt, raw_command)
@@ -171,6 +229,13 @@ class AssistantCommandHandler:
 
         if self._match(command, "historial de acciones", "ultimas acciones", "ultimas tareas"):
             return actions.format_recent_actions()
+
+        if self._match(command, "ver apps", "lista apps", "mostrar apps", "apps disponibles", "alias de apps"):
+            return actions.format_registered_apps_summary()
+
+        if self._match(command, "recargar apps", "recarga apps", "actualizar apps"):
+            count = actions.reload_app_catalog()
+            return f"Catalogo de apps recargado. Entradas disponibles: {count}."
 
         if self._match(command, "diagnostico funciones", "diagnostico de funciones", "estado de funciones", "que funciones tienes"):
             diagnostics = actions.get_capability_diagnostics()
@@ -265,6 +330,55 @@ class AssistantCommandHandler:
             if self.owner.functional_automation_enabled:
                 return "Automatizaciones funcionales: activadas."
             return "Automatizaciones funcionales: desactivadas."
+
+        if self._match(command, "activar voz continua", "activar voz en tiempo real", "modo voz continua", "modo manos libres"):
+            self.owner.start_realtime_listening()
+            return "Voz continua activada. Di la palabra clave seguida del comando."
+
+        if self._match(command, "desactivar voz continua", "quitar voz continua", "apagar voz en tiempo real"):
+            self.owner.stop_realtime_listening()
+            return "Voz continua desactivada."
+
+        if self._match(command, "activar respuestas por voz", "hablame", "responde por voz"):
+            self.owner.voice_response_enabled = True
+            self.owner.save_assistant_config()
+            return "Respuestas por voz activadas."
+
+        if self._match(command, "desactivar respuestas por voz", "no hables", "solo texto"):
+            self.owner.voice_response_enabled = False
+            self.owner.save_assistant_config()
+            return "Respuestas por voz desactivadas."
+
+        if self._match(command, "estado de voz", "estado voz", "como esta la voz"):
+            realtime = "activa" if self.owner.voice_realtime_enabled else "desactivada"
+            spoken = "activadas" if self.owner.voice_response_enabled else "desactivadas"
+            wake = "obligatoria" if self.owner.require_wake_word else "opcional"
+            return (
+                f"Voz continua: {realtime}. Respuestas por voz: {spoken}. "
+                f"Palabra clave: {wake} ({self.owner.voice_wake_word})."
+            )
+
+        if self._match(command, "ver estilos", "lista estilos", "mostrar estilos", "estilos disponibles"):
+            styles = list(getattr(self.owner, "available_styles", []))
+            if not styles:
+                return "No encontre estilos visuales disponibles en la carpeta img."
+            return "Estilos disponibles: " + ", ".join(styles)
+
+        if self._match(command, "recargar estilos", "actualizar estilos", "refrescar estilos"):
+            current = self.owner.current_style
+            self.owner.available_styles = self.owner.discover_available_styles()
+            if current not in self.owner.available_styles and self.owner.available_styles:
+                self.owner.switch_style(self.owner.available_styles[0])
+            self.owner.save_assistant_config()
+            return "Estilos recargados. Usa: usar estilo <nombre>."
+
+        if command.startswith("usar estilo") or command.startswith("cambiar estilo") or command.startswith("estilo "):
+            selected_style = self._resolve_style_name(raw_command)
+            if not selected_style:
+                return "No detecte un estilo valido. Di: ver estilos para consultar opciones."
+            self.owner.switch_style(selected_style)
+            self.owner.save_assistant_config()
+            return f"Estilo visual actualizado a {self.owner.current_style}."
 
         if command.startswith("tu nombre es ") or command.startswith("te llamas "):
             raw_lower = raw_command.lower()
@@ -479,18 +593,7 @@ class AssistantCommandHandler:
             moved = actions.run_desktop_cleanup()
             return f"Limpieza completada. Elementos movidos a archivado: {moved}."
 
-        if self._match(command, "abre", "abrir", "inicia", "ejecuta") and self._match(command, "chrome", "brave", "edge", "firefox", "explorador", "notepad", "bloc de notas", "paint", "calculadora", "cmd", "powershell", "vscode", threshold=0.78):
-            app_name = self._extract_after_markers(raw_command, ["abre", "abrir", "inicia", "ejecuta"])
-            app_name = app_name.strip(" .,:;!?")
-            if not app_name:
-                return "No detecte que aplicacion abrir."
-            return actions.queue_pending_action(
-                "open_app",
-                {"app_name": app_name},
-                f"abrir la aplicacion {app_name}",
-            )
-
-        if self._match(command, "abre", "abrir", "navega", "ir a") and self._match(command, "www", "http", ".com", ".net", ".org", threshold=0.75):
+        if self._match(command, "abre", "abrir", "abreme", "inicia", "ejecuta", "lanza", "navega", "ir a", threshold=0.78) and self._match(command, "www", "http", ".com", ".net", ".org", ".io", ".dev", threshold=0.75):
             url = self._extract_url_from_command(raw_command)
             if not url:
                 return "No detecte una URL valida."
@@ -498,6 +601,16 @@ class AssistantCommandHandler:
                 "open_website",
                 {"url": url},
                 f"abrir el sitio {url}",
+            )
+
+        if self._match(command, "abre", "abrir", "abreme", "inicia", "ejecuta", "lanza", "abrime", threshold=0.78):
+            app_name = self._extract_open_target(raw_command)
+            if not app_name:
+                return "No detecte que aplicacion abrir."
+            return actions.queue_pending_action(
+                "open_app",
+                {"app_name": app_name},
+                f"abrir la aplicacion {app_name}",
             )
 
         if self._match(command, "bloquea pc", "bloquear pc", "lock pc"):
@@ -561,7 +674,8 @@ class AssistantCommandHandler:
             return (
                 "Puedo crear estructura de carpetas, crear/mover/renombrar/eliminar en escritorio, "
                 "buscar archivos, crear notas y recordatorios, abrir apps y sitios web, capturas, limpieza de escritorio, "
-                "control multimedia, alternar IA local/nube, editar memoria y revisar estado de Ollama. "
+                "control multimedia, alternar IA local/nube, editar memoria y revisar estado de Ollama, "
+                "activar voz continua y gestionar estilos visuales de la mascota. "
                 "Modo pro: escribe 'ver alias' para shortcuts rapidos personalizados."
             )
 
@@ -592,6 +706,28 @@ class AssistantCommandHandler:
                     "archive_item",
                     {"item_name": item_name},
                     f"mover {item_name} a la carpeta de archivado",
+                )
+
+        if action_name == "open_app":
+            app_name = str(action_args.get("app_name", "")).strip()
+            if app_name:
+                if not self.owner.has_permission("full"):
+                    return "Tu nivel de permisos actual no permite abrir aplicaciones."
+                return actions.queue_pending_action(
+                    "open_app",
+                    {"app_name": app_name},
+                    f"abrir la aplicacion {app_name}",
+                )
+
+        if action_name == "open_website":
+            url = str(action_args.get("url", "")).strip() or self._extract_url_from_command(raw_command)
+            if url:
+                if not self.owner.has_permission("full"):
+                    return "Tu nivel de permisos actual no permite abrir sitios web."
+                return actions.queue_pending_action(
+                    "open_website",
+                    {"url": url},
+                    f"abrir el sitio {url}",
                 )
 
         if action_name == "media_next":

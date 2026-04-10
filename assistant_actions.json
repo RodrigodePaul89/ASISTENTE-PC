@@ -112,5 +112,35 @@
     "action": "system_control",
     "detail": "lock",
     "status": "ok"
+  },
+  {
+    "timestamp": 1774450133,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\ivanesgey",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1774450147,
+    "action": "open_app",
+    "detail": "la carpeta \"ivanesgey\"->illustrator",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1774450618,
+    "action": "delete_item",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\la carpeta ivanesgey del escritorio",
+    "status": "missing"
+  },
+  {
+    "timestamp": 1774450663,
+    "action": "open_app",
+    "detail": "wasa->whatsapp",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1774450702,
+    "action": "open_app",
+    "detail": "code->code",
+    "status": "ok"
   }
 ]

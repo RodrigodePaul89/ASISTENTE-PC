@@ -1,4 +1,5 @@
 import ctypes
+import re
 import json
 import os
 import shutil
@@ -6,6 +7,7 @@ import subprocess
 import time
 import webbrowser
 from datetime import datetime
+from difflib import SequenceMatcher
 from pathlib import Path
 from tkinter import messagebox, simpledialog
 
@@ -13,6 +15,216 @@ from tkinter import messagebox, simpledialog
 class SystemActionManager:
     def __init__(self, owner):
         self.owner = owner
+        self.app_catalog = self._load_app_catalog()
+
+    def _apps_catalog_file(self):
+        return self.owner.asset_dir / "assistant_apps.json"
+
+    def _default_app_catalog(self):
+        return [
+            {"name": "chrome", "aliases": ["google chrome", "navegador chrome"], "targets": ["chrome"]},
+            {"name": "edge", "aliases": ["ms edge", "microsoft edge", "navegador edge"], "targets": ["msedge"]},
+            {"name": "firefox", "aliases": ["mozilla", "navegador firefox"], "targets": ["firefox"]},
+            {"name": "brave", "aliases": ["navegador brave"], "targets": ["brave"]},
+            {"name": "opera", "aliases": ["opera gx"], "targets": ["opera", "opera.exe"]},
+            {"name": "explorador", "aliases": ["explorer", "file explorer"], "targets": ["explorer"]},
+            {"name": "vscode", "aliases": ["code", "visual studio code", "vs code"], "targets": ["code"]},
+            {"name": "notepad", "aliases": ["bloc de notas", "editor de texto"], "targets": ["notepad"]},
+            {"name": "paint", "aliases": ["mspaint"], "targets": ["mspaint"]},
+            {"name": "calculadora", "aliases": ["calc", "calculator"], "targets": ["calc"]},
+            {"name": "cmd", "aliases": ["simbolo del sistema", "command prompt"], "targets": ["cmd"]},
+            {"name": "powershell", "aliases": ["pwsh", "terminal powershell"], "targets": ["powershell", "pwsh"]},
+            {"name": "terminal", "aliases": ["windows terminal", "wt"], "targets": ["wt", "powershell"]},
+            {"name": "task manager", "aliases": ["administrador de tareas", "taskmgr"], "targets": ["taskmgr"]},
+            {"name": "snipping tool", "aliases": ["recortes", "captura recortes"], "targets": ["snippingtool", "SnippingTool.exe"]},
+            {"name": "word", "aliases": ["microsoft word", "winword"], "targets": ["winword"]},
+            {"name": "excel", "aliases": ["microsoft excel"], "targets": ["excel"]},
+            {"name": "powerpoint", "aliases": ["ppt", "microsoft powerpoint"], "targets": ["powerpnt"]},
+            {"name": "outlook", "aliases": ["correo outlook", "microsoft outlook"], "targets": ["outlook"]},
+            {"name": "onenote", "aliases": ["one note"], "targets": ["onenote"]},
+            {"name": "teams", "aliases": ["microsoft teams"], "targets": ["teams", "ms-teams"]},
+            {"name": "discord", "aliases": ["disc"], "targets": ["discord", "%LOCALAPPDATA%\\Discord\\Update.exe --processStart Discord.exe"]},
+            {"name": "telegram", "aliases": ["tg"], "targets": ["telegram", "%APPDATA%\\Telegram Desktop\\Telegram.exe"]},
+            {"name": "whatsapp", "aliases": ["wasa", "wsp", "whats"], "targets": ["%LOCALAPPDATA%\\WhatsApp\\WhatsApp.exe", "%LOCALAPPDATA%\\Programs\\WhatsApp\\WhatsApp.exe", "whatsapp"]},
+            {"name": "spotify", "aliases": ["music spotify"], "targets": ["spotify", "%APPDATA%\\Spotify\\Spotify.exe"]},-
+            {"name": "steam", "aliases": ["juegos steam"], "targets": ["steam"]},
+            {"name": "epic", "aliases": ["epic games", "epic launcher"], "targets": ["com.epicgames.launcher://apps", "EpicGamesLauncher.exe"]},
+            {"name": "riot", "aliases": ["riot client", "valorant"], "targets": ["RiotClientServices.exe"]},
+            {"name": "obs", "aliases": ["obs studio"], "targets": ["obs64", "obs32", "obs"]},
+            {"name": "vlc", "aliases": ["video lan"], "targets": ["vlc"]},
+            {"name": "photoshop", "aliases": ["adobe photoshop", "ps"], "targets": ["photoshop.exe"]},
+            {"name": "illustrator", "aliases": ["adobe illustrator", "ai"], "targets": ["illustrator.exe"]},
+            {"name": "premiere", "aliases": ["adobe premiere", "premiere pro"], "targets": ["adobe premiere pro.exe", "premiere.exe"]},
+            {"name": "figma", "aliases": ["figma desktop"], "targets": ["figma", "Figma.exe"]},
+            {"name": "notion", "aliases": ["notion app"], "targets": ["notion", "Notion.exe"]},
+            {"name": "postman", "aliases": ["api postman"], "targets": ["postman", "Postman.exe"]},
+            {"name": "github desktop", "aliases": ["github", "gh desktop"], "targets": ["github", "GitHubDesktop.exe"]},
+            {"name": "docker desktop", "aliases": ["docker", "contenedores"], "targets": ["Docker Desktop.exe", "docker"]},
+        ]
+
+    def _normalize_lookup(self, value):
+        normalized = self.owner.normalize_command_text(value)
+        return re.sub(r"[^a-z0-9]+", "", normalized)
+
+    def _sanitize_app_record(self, record):
+        if not isinstance(record, dict):
+            return None
+
+        name = str(record.get("name", "")).strip()
+        if not name:
+            return None
+
+        aliases = record.get("aliases", [])
+        targets = record.get("targets", [])
+
+        if isinstance(aliases, str):
+            aliases = [aliases]
+        if isinstance(targets, str):
+            targets = [targets]
+
+        clean_aliases = []
+        seen_aliases = set()
+        for alias in aliases:
+            value = str(alias).strip()
+            if not value:
+                continue
+            key = self._normalize_lookup(value)
+            if not key or key in seen_aliases:
+                continue
+            seen_aliases.add(key)
+            clean_aliases.append(value)
+
+        clean_targets = []
+        for target in targets:
+            value = str(target).strip()
+            if value:
+                clean_targets.append(value)
+
+        if not clean_targets:
+            return None
+
+        return {
+            "name": name,
+            "aliases": clean_aliases,
+            "targets": clean_targets,
+        }
+
+    def _persist_app_catalog(self, records):
+        payload = {"apps": records}
+        try:
+            self._apps_catalog_file().write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
+    def _load_app_catalog(self):
+        records = []
+        catalog_file = self._apps_catalog_file()
+
+        if catalog_file.exists():
+            try:
+                payload = json.loads(catalog_file.read_text(encoding="utf-8"))
+                loaded = payload.get("apps", payload) if isinstance(payload, dict) else payload
+                if isinstance(loaded, list):
+                    records = loaded
+            except Exception:
+                records = []
+
+        sanitized = []
+        for record in records:
+            parsed = self._sanitize_app_record(record)
+            if parsed is not None:
+                sanitized.append(parsed)
+
+        if not sanitized:
+            sanitized = self._default_app_catalog()
+            self._persist_app_catalog(sanitized)
+
+        return sanitized
+
+    def reload_app_catalog(self):
+        self.app_catalog = self._load_app_catalog()
+        return len(self.app_catalog)
+
+    def _resolve_app_record(self, app_name):
+        requested = str(app_name or "").strip()
+        if not requested:
+            return None
+
+        request_key = self._normalize_lookup(requested)
+        if not request_key:
+            return None
+
+        best_record = None
+        best_score = 0.0
+        for record in self.app_catalog:
+            alias_candidates = [record.get("name", "")] + list(record.get("aliases", []))
+            for alias in alias_candidates:
+                alias_key = self._normalize_lookup(alias)
+                if not alias_key:
+                    continue
+
+                if request_key == alias_key:
+                    return record
+
+                ratio = SequenceMatcher(None, request_key, alias_key).ratio()
+                if request_key in alias_key or alias_key in request_key:
+                    ratio = max(ratio, 0.92)
+
+                if ratio > best_score:
+                    best_score = ratio
+                    best_record = record
+
+        if best_score >= 0.72:
+            return best_record
+        return None
+
+    def _launch_single_target(self, target):
+        candidate = str(target or "").strip()
+        if not candidate:
+            return False
+
+        # Permite comandos con argumentos para launchers comunes.
+        if " --" in candidate:
+            expanded = os.path.expandvars(candidate)
+            parts = expanded.split(" ")
+            executable = parts[0].strip()
+            arguments = [part for part in parts[1:] if part]
+            if not executable:
+                return False
+            exec_path = Path(executable)
+            if exec_path.exists():
+                subprocess.Popen([str(exec_path)] + arguments, shell=False)
+                return True
+            subprocess.Popen([executable] + arguments, shell=False)
+            return True
+
+        expanded = os.path.expandvars(candidate)
+        as_path = Path(expanded)
+        if as_path.exists():
+            subprocess.Popen([str(as_path)], shell=False)
+            return True
+
+        subprocess.Popen([expanded], shell=False)
+        return True
+
+    def format_registered_apps_summary(self, limit=60):
+        records = sorted(self.app_catalog, key=lambda rec: rec.get("name", "").lower())
+        if not records:
+            return "No hay apps registradas en el catalogo."
+
+        lines = ["Apps registradas para apertura por nombre/alias:"]
+        for record in records[: max(1, int(limit))]:
+            name = record.get("name", "app")
+            aliases = record.get("aliases", [])
+            alias_text = ", ".join(aliases[:4]) if aliases else "(sin alias extra)"
+            lines.append(f"- {name} -> {alias_text}")
+
+        lines.append("")
+        lines.append("Puedes ampliar o editar el archivo assistant_apps.json en esta carpeta del proyecto.")
+        return "\n".join(lines)
 
     def can_run_system_action(self, bypass_cooldown=False):
         now = time.time()
@@ -234,38 +446,37 @@ class SystemActionManager:
             self.append_action_log("open_app", app_name, "blocked-permission")
             return False
 
-        app = str(app_name or "").strip().lower()
-        app_map = {
-            "chrome": ["chrome"],
-            "google chrome": ["chrome"],
-            "brave": ["brave"],
-            "brave browser": ["brave"],
-            "edge": ["msedge"],
-            "firefox": ["firefox"],
-            "explorador": ["explorer"],
-            "explorer": ["explorer"],
-            "notepad": ["notepad"],
-            "bloc de notas": ["notepad"],
-            "paint": ["mspaint"],
-            "calculadora": ["calc"],
-            "calculator": ["calc"],
-            "cmd": ["cmd"],
-            "terminal": ["wt"],
-            "powershell": ["powershell"],
-            "vscode": ["code"],
-            "visual studio code": ["code"],
-        }
-        command = app_map.get(app, [app])
-        try:
-            subprocess.Popen(command, shell=False)
-            self.owner.stats["pc_actions"] += 1
-            self.append_action_log("open_app", app_name, "ok")
-            return True
-        except Exception as error:
-            self.append_action_log("open_app", app_name, f"error:{error}")
-            if not auto:
-                messagebox.showerror("Error", f"No pude abrir la aplicacion.\n{error}", parent=self.owner.root)
+        requested_name = str(app_name or "").strip()
+        if not requested_name:
             return False
+
+        # Permite recargar el catalogo si el usuario lo edito manualmente.
+        self.reload_app_catalog()
+
+        record = self._resolve_app_record(requested_name)
+        targets = record.get("targets", []) if record else [requested_name]
+        resolved_name = record.get("name", requested_name) if record else requested_name
+
+        last_error = ""
+        for target in targets:
+            try:
+                if self._launch_single_target(target):
+                    self.owner.stats["pc_actions"] += 1
+                    self.append_action_log("open_app", f"{requested_name}->{target}", "ok")
+                    return True
+            except Exception as error:
+                last_error = str(error)
+
+        error_detail = last_error or "no-match"
+        self.append_action_log("open_app", f"{requested_name}->{resolved_name}", f"error:{error_detail}")
+        if not auto:
+            messagebox.showerror(
+                "Error",
+                f"No pude abrir la aplicacion '{requested_name}'.\n"
+                f"Puedes revisar aliases en assistant_apps.json o decir: ver apps.",
+                parent=self.owner.root,
+            )
+        return False
 
     def open_website(self, url, auto=False):
         if not self.owner.has_permission("full"):
@@ -677,6 +888,8 @@ class SystemActionManager:
             "sistema": ["system_control(lock/restart/shutdown)"],
             "multimedia": ["media_next", "media_prev", "media_play_pause"],
             "ia": ["llm_enable", "llm_disable", "llm_mode_local", "llm_mode_cloud", "set_model", "ollama_status", "ollama_test"],
+            "voz": ["voice_realtime_on", "voice_realtime_off", "voice_reply_on", "voice_reply_off", "voice_status"],
+            "diseno": ["list_styles", "reload_styles", "set_style"],
         }
 
     def looks_like_system_request(self, command):
@@ -697,7 +910,11 @@ class SystemActionManager:
             "siguiente",
             "anterior",
             "abre",
+            "abrime",
             "navega",
+            "inicia",
+            "ejecuta",
+            "lanza",
             "sitio",
             "pagina",
             "recordatorio",
@@ -721,6 +938,13 @@ class SystemActionManager:
             "permiso",
             "activar ia",
             "desactivar ia",
+            "voz continua",
+            "voz en tiempo real",
+            "respuestas por voz",
+            "estado voz",
+            "estilo",
+            "estilos",
+            "avatar",
         )
         return any(keyword in command for keyword in keywords)
 
