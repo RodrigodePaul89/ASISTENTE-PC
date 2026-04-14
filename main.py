@@ -242,6 +242,17 @@ class DesktopPet:
         self.pet_name = "Mimi"
         self.user_name_memory = ""
         self.pet_memory_notes = []
+        self.music_memory = []
+        self.music_personality_concepts = []
+        self.music_queue = []
+        self.music_session_active = False
+        self.music_current_song = ""
+        self.music_controls_window = None
+        self.music_controls_drag_offset = (0, 0)
+        self.screen_awareness_job = None
+        self.screen_awareness_interval_ms = 5000
+        self.last_active_window_title = ""
+        self.last_context_message_at = 0.0
         if self.llm_provider not in self.llm_providers:
             self.llm_provider = "ollama"
         if self.llm_provider == "openai" and not self.llm_endpoint.startswith("https://"):
@@ -327,6 +338,8 @@ class DesktopPet:
 
         # Iniciar ciclos
         self.load_assistant_config()
+        if self.music_session_active:
+            self.show_music_controls()
         self.apply_personality(self.personality_name)
         self.load_pet_state(quiet=True)
         # Requisito del proyecto: arrancar siempre en modo suelo.
@@ -339,6 +352,7 @@ class DesktopPet:
         self.schedule_assistant_autonomy()
         self.schedule_needs_tick()
         self.schedule_auto_color_change()
+        self.schedule_screen_awareness()
         if self.voice_realtime_enabled:
             self.start_realtime_listening()
 
@@ -1050,11 +1064,6 @@ class DesktopPet:
         else:
             self.needs["health"] = self.clamp_need(self.needs["health"] + 0.45)
 
-        if self.needs["health"] <= 0 and self.state != "dead":
-            print("[Needs] Salud critica: la mascota colapso.")
-            self.needs["health"] = 35
-            self.trigger_dead()
-
         if self.needs["energy"] < 18 and self.state == "walking" and random.random() < 0.1:
             self.set_idle()
 
@@ -1226,6 +1235,9 @@ class DesktopPet:
 
     def format_pet_memory(self):
         return self.identity_manager.format_pet_memory()
+
+    def format_music_memory(self):
+        return self.identity_manager.format_music_memory()
 
     def init_hud(self):
         if self.hud_window is not None:
@@ -1444,6 +1456,143 @@ class DesktopPet:
     def control_media_key(self, action, auto=False):
         self.action_manager.control_media_key(action, auto)
 
+    def _music_controls_on_press(self, event):
+        self.music_controls_drag_offset = (event.x, event.y)
+
+    def _music_controls_on_drag(self, event):
+        if self.music_controls_window is None or not self.music_controls_window.winfo_exists():
+            return
+        offset_x, offset_y = self.music_controls_drag_offset
+        new_x = max(0, event.x_root - offset_x)
+        new_y = max(0, event.y_root - offset_y)
+        self.music_controls_window.geometry(f"+{new_x}+{new_y}")
+
+    def show_music_controls(self):
+        if self.music_controls_window is not None and self.music_controls_window.winfo_exists():
+            self.music_controls_window.deiconify()
+            self.music_controls_window.lift()
+            return
+
+        self.music_controls_window = tk.Toplevel(self.root)
+        self.music_controls_window.overrideredirect(True)
+        self.music_controls_window.attributes("-topmost", True)
+        self.music_controls_window.configure(bg="#10253f", highlightthickness=2, highlightbackground="#081523")
+
+        frame = tk.Frame(self.music_controls_window, bg="#10253f")
+        frame.pack(fill="both", expand=True)
+        frame.bind("<ButtonPress-1>", self._music_controls_on_press)
+        frame.bind("<B1-Motion>", self._music_controls_on_drag)
+
+        title = tk.Label(
+            frame,
+            text="Mimi Music",
+            bg="#10253f",
+            fg="white",
+            font=("Segoe UI", 9, "bold"),
+            padx=8,
+            pady=4,
+        )
+        title.pack(fill="x")
+        title.bind("<ButtonPress-1>", self._music_controls_on_press)
+        title.bind("<B1-Motion>", self._music_controls_on_drag)
+
+        controls = tk.Frame(frame, bg="#10253f")
+        controls.pack(fill="x", padx=8, pady=(2, 8))
+
+        pause_btn = tk.Button(
+            controls,
+            text="Pausa",
+            command=lambda: self.control_media_key("play_pause", auto=True),
+            bg="#1a4e84",
+            fg="white",
+            relief="flat",
+            padx=10,
+        )
+        pause_btn.pack(side="left")
+
+        next_btn = tk.Button(
+            controls,
+            text="Siguiente",
+            command=self.play_next_from_queue,
+            bg="#1a4e84",
+            fg="white",
+            relief="flat",
+            padx=10,
+        )
+        next_btn.pack(side="left", padx=(6, 0))
+
+        exit_btn = tk.Button(
+            controls,
+            text="Salir",
+            command=self.exit_music_session,
+            bg="#7a1d1d",
+            fg="white",
+            relief="flat",
+            padx=10,
+        )
+        exit_btn.pack(side="left", padx=(6, 0))
+
+        panel_x = min(self.root.winfo_screenwidth() - 220, max(10, self.x + 90))
+        panel_y = min(self.root.winfo_screenheight() - 120, max(10, self.y + 20))
+        self.music_controls_window.geometry(f"210x92+{panel_x}+{panel_y}")
+
+    def hide_music_controls(self):
+        if self.music_controls_window is None:
+            return
+        try:
+            self.music_controls_window.withdraw()
+        except Exception:
+            pass
+
+    def activate_music_session(self, song_query):
+        self.music_session_active = True
+        self.music_current_song = str(song_query or "").strip()[:120]
+        self.show_music_controls()
+        self.set_listening()
+        self.save_assistant_config()
+
+    def deactivate_music_session(self):
+        self.music_session_active = False
+        self.music_current_song = ""
+        self.hide_music_controls()
+        self.set_walking()
+
+    def play_next_from_queue(self):
+        ok, message = self.action_manager.play_next_queued_song()
+        self.set_chat_status(message)
+        if ok:
+            self.append_chat_message("Mimi", message)
+        else:
+            self.append_chat_message("Mimi", "La cola musical esta vacia.")
+
+    def exit_music_session(self):
+        self.action_manager.exit_music_session()
+        self.set_chat_status("Sesion musical finalizada.")
+        self.append_chat_message("Mimi", "Cerrando la sesion musical y limpiando cola.")
+
+    def schedule_screen_awareness(self):
+        if self.is_destroying:
+            return
+        self.run_screen_awareness_tick()
+        self.screen_awareness_job = self.root.after(self.screen_awareness_interval_ms, self.schedule_screen_awareness)
+
+    def run_screen_awareness_tick(self):
+        title = self.action_manager.get_active_window_title()
+        if not title:
+            return
+
+        if title == self.last_active_window_title:
+            return
+        self.last_active_window_title = title
+
+        message = self.action_manager.build_window_personalized_message(title)
+        self.set_chat_status(message)
+
+        now = time.time()
+        if now - self.last_context_message_at >= 18:
+            self.append_chat_message("Mimi", message)
+            self.last_context_message_at = now
+
     def save_pet_state(self):
         return self.state_manager.save_pet_state()
 
@@ -1644,6 +1793,15 @@ class DesktopPet:
         if self.chat_window is not None and self.chat_window.winfo_exists():
             if self.state != "listening":
                 self.set_listening()
+            self.root.geometry(f"+{self.x}+{self.y}")
+            self.root.after(40, self.move)
+            return
+
+        # Durante sesion musical se mantiene quieta para no distraer.
+        if self.music_session_active:
+            if self.state != "listening":
+                self.set_listening()
+            self.face_user()
             self.root.geometry(f"+{self.x}+{self.y}")
             self.root.after(40, self.move)
             return
@@ -2129,6 +2287,16 @@ class DesktopPet:
             self.root.after_cancel(self.assistant_job)
             self.assistant_job = None
 
+        if self.screen_awareness_job is not None:
+            self.root.after_cancel(self.screen_awareness_job)
+            self.screen_awareness_job = None
+
+        if self.music_controls_window is not None:
+            try:
+                self.music_controls_window.destroy()
+            except Exception:
+                pass
+
         explosion = tk.Toplevel(self.root)
         explosion.overrideredirect(True)
         explosion.attributes("-topmost", True)
@@ -2191,6 +2359,14 @@ class DesktopPet:
             return
         self.is_destroying = True
         self.voice_manager.stop_continuous_listening()
+        if self.screen_awareness_job is not None:
+            self.root.after_cancel(self.screen_awareness_job)
+            self.screen_awareness_job = None
+        if self.music_controls_window is not None:
+            try:
+                self.music_controls_window.destroy()
+            except Exception:
+                pass
         self.save_assistant_config()
         self.root.destroy()
 

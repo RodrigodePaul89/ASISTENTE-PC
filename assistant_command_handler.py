@@ -97,6 +97,79 @@ class AssistantCommandHandler:
         target = self._extract_after_markers(raw_command, markers)
         return target.strip(" .,:;!?")
 
+    def _extract_song_request(self, raw_command):
+        raw = str(raw_command or "").strip()
+        if not raw:
+            return ""
+
+        normalized = self.owner.normalize_command_text(raw)
+        marker_patterns = (
+            r"(?:pon(?:me)?\s+una\s+cancion\s+de)\s+(.+)$",
+            r"(?:pon(?:me)?\s+una\s+cancion)\s+(.+)$",
+            r"(?:pon\s+cancion\s+de)\s+(.+)$",
+            r"(?:pon\s+cancion)\s+(.+)$",
+            r"(?:reproduce)\s+(.+)$",
+            r"(?:reproducir)\s+(.+)$",
+        )
+        for pattern in marker_patterns:
+            match = re.search(pattern, normalized)
+            if match:
+                return match.group(1).strip(" .,:;!?")
+
+        return ""
+
+    def _handle_bang_music_command(self, raw_command):
+        raw = str(raw_command or "").strip()
+        if not raw.startswith("!"):
+            return ""
+
+        body = raw[1:].strip()
+        if not body:
+            return "Comando musical vacio. Usa !musichelp para ver ejemplos."
+
+        lower = body.lower()
+        if lower == "musichelp":
+            return (
+                "Comandos musicales disponibles:\n"
+                "- !play <cancion> : busca y reproduce ahora en YouTube Music\n"
+                "- !next <cancion> : agrega la cancion a la cola\n"
+                "- !queue : muestra la cola actual\n"
+                "- !exit : cierra sesion musical y limpia cola"
+            )
+
+        if lower == "exit":
+            self.owner.exit_music_session()
+            return "Sesion musical cerrada."
+
+        if lower == "queue":
+            queue = list(getattr(self.owner, "music_queue", []))
+            if not queue:
+                return "Cola musical vacia."
+            return "Cola musical:\n- " + "\n- ".join(queue[:10])
+
+        if lower.startswith("play "):
+            if not self.owner.has_permission("media"):
+                return "Tu nivel de permisos actual no permite controlar multimedia."
+            query = body[5:].strip()
+            if not query:
+                return "Indica la cancion: !play nombre"
+            ok, has_lyrics = self.owner.action_manager.play_song_on_youtube_music(query, auto=True)
+            if not ok:
+                return "No pude reproducir esa cancion ahora."
+            if has_lyrics:
+                return "Reproduciendo ahora. Aprendi conceptos y una parte de la letra."
+            return "Reproduciendo ahora. Aprendi conceptos principales de la cancion."
+
+        if lower.startswith("next "):
+            query = body[5:].strip()
+            if not query:
+                return "Indica la cancion: !next nombre"
+            if self.owner.action_manager.queue_song_for_next(query):
+                return f"Agregada a la cola: {query}."
+            return "No pude agregar esa cancion a la cola."
+
+        return "Comando musical no reconocido. Usa !musichelp."
+
     def _resolve_style_name(self, raw_command):
         available = list(getattr(self.owner, "available_styles", []))
         if not available:
@@ -179,6 +252,11 @@ class AssistantCommandHandler:
         # Evita respuestas inesperadas cuando "no" llega sin una accion pendiente.
         if actions.is_negative_command(command):
             return "Entendido, no hare ningun cambio por ahora."
+
+        # Comandos rapidos de musica por prefijo '!'.
+        bang_result = self._handle_bang_music_command(raw_command)
+        if bang_result:
+            return bang_result
 
         # ---- MODO COMANDOS PRO: expansion de alias ----
         if not _alias_expanded:
@@ -635,22 +713,44 @@ class AssistantCommandHandler:
             )
 
         if self._match(command, "siguiente cancion", "siguiente canción"):
+            return "Para siguiente usa el boton 'Siguiente' del panel Mimi Music o agrega una cancion con !next <nombre>."
+
+        if self._match(
+            command,
+            "pon una cancion",
+            "ponme una cancion",
+            "pon cancion",
+            "reproduce",
+            "reproducir",
+            "poner musica",
+        ):
             if not self.owner.has_permission("media"):
                 return "Tu nivel de permisos actual no permite controlar multimedia."
-            self.owner.control_media_key("next", auto=True)
-            return "Envie siguiente cancion."
+
+            song_query = self._extract_song_request(raw_command)
+            if not song_query:
+                return "Dime el nombre de la cancion para ponerla en YouTube Music."
+
+            ok, has_lyrics = actions.play_song_on_youtube_music(song_query, auto=True)
+            if not ok:
+                return "No pude abrir YouTube Music en este momento."
+            if has_lyrics:
+                return "Listo. La puse en YouTube Music y guarde una parte de la letra en mi memoria."
+            return "Listo. La puse en YouTube Music y guarde la cancion en mi memoria musical."
+
+        if self._match(command, "mostrar memoria musical", "memoria musical", "que canciones recuerdas"):
+            return self.owner.format_music_memory()
+
+        if self._match(command, "borrar memoria musical", "limpiar memoria musical"):
+            self.owner.music_memory = []
+            self.owner.save_assistant_config()
+            return "Memoria musical limpiada."
 
         if self._match(command, "cancion anterior", "canción anterior"):
-            if not self.owner.has_permission("media"):
-                return "Tu nivel de permisos actual no permite controlar multimedia."
-            self.owner.control_media_key("prev", auto=True)
-            return "Envie cancion anterior."
+            return "La navegacion musical ahora se gestiona desde el panel Mimi Music."
 
         if self._match(command, "pausa musica", "pausar musica", "play pausa", "reanudar musica"):
-            if not self.owner.has_permission("media"):
-                return "Tu nivel de permisos actual no permite controlar multimedia."
-            self.owner.control_media_key("play_pause", auto=True)
-            return "Alternando reproduccion de musica."
+            return "Usa el boton 'Pausa' del panel Mimi Music para pausar o reanudar."
 
         if self._match(command, "modo libre"):
             self.owner.set_mode_free()
@@ -674,7 +774,7 @@ class AssistantCommandHandler:
             return (
                 "Puedo crear estructura de carpetas, crear/mover/renombrar/eliminar en escritorio, "
                 "buscar archivos, crear notas y recordatorios, abrir apps y sitios web, capturas, limpieza de escritorio, "
-                "control multimedia, alternar IA local/nube, editar memoria y revisar estado de Ollama, "
+                "poner canciones en YouTube Music con memoria musical y comandos !play/!next/!exit, alternar IA local/nube, editar memoria y revisar estado de Ollama, "
                 "activar voz continua y gestionar estilos visuales de la mascota. "
                 "Modo pro: escribe 'ver alias' para shortcuts rapidos personalizados."
             )
@@ -731,16 +831,13 @@ class AssistantCommandHandler:
                 )
 
         if action_name == "media_next":
-            self.owner.control_media_key("next", auto=True)
-            return "Envie siguiente cancion."
+            return "Usa el boton 'Siguiente' del panel Mimi Music o !next para cola."
 
         if action_name == "media_prev":
-            self.owner.control_media_key("prev", auto=True)
-            return "Envie cancion anterior."
+            return "La navegacion musical se controla desde Mimi Music."
 
         if action_name == "media_play_pause":
-            self.owner.control_media_key("play_pause", auto=True)
-            return "Alternando reproduccion de musica."
+            return "Usa el boton 'Pausa' del panel Mimi Music."
 
         if action_name == "mode_free":
             self.owner.set_mode_free()

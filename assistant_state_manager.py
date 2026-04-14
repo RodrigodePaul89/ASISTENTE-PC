@@ -93,6 +93,68 @@ class PetStateManager:
                     cleaned_notes.append(text[:120])
             self.pet.pet_memory_notes = cleaned_notes[-20:]
 
+        music_cfg = data.get("music_memory", self.pet.music_memory)
+        if isinstance(music_cfg, list):
+            cleaned_music = []
+            for item in music_cfg:
+                if not isinstance(item, dict):
+                    continue
+                query = str(item.get("query", "")).strip()[:120]
+                if not query:
+                    continue
+                source = str(item.get("source", "youtube_music")).strip()[:30] or "youtube_music"
+                lyrics = str(item.get("lyrics_snippet", "")).strip()[:800]
+                micro_snippet = str(item.get("micro_snippet", "")).strip()[:180]
+                transcription_source = str(item.get("transcription_source", "none")).strip()[:20] or "none"
+                raw_concepts = item.get("concepts", [])
+                concepts = []
+                if isinstance(raw_concepts, list):
+                    for concept in raw_concepts:
+                        token = str(concept).strip().lower()[:24]
+                        if token and token not in concepts:
+                            concepts.append(token)
+                try:
+                    timestamp = int(item.get("timestamp", int(time.time())))
+                except Exception:
+                    timestamp = int(time.time())
+                cleaned_music.append(
+                    {
+                        "timestamp": timestamp,
+                        "query": query,
+                        "source": source,
+                        "lyrics_snippet": lyrics,
+                        "micro_snippet": micro_snippet,
+                        "transcription_source": transcription_source,
+                        "concepts": concepts[:8],
+                    }
+                )
+            self.pet.music_memory = cleaned_music[-40:]
+
+        concept_cfg = data.get("music_personality_concepts", self.pet.music_personality_concepts)
+        if isinstance(concept_cfg, list):
+            normalized = []
+            for item in concept_cfg:
+                token = str(item).strip().lower()[:24]
+                if token and token not in normalized:
+                    normalized.append(token)
+            self.pet.music_personality_concepts = normalized[-24:]
+
+        queue_cfg = data.get("music_queue", self.pet.music_queue)
+        if isinstance(queue_cfg, list):
+            normalized_queue = []
+            for item in queue_cfg:
+                song = str(item).strip()[:120]
+                if song:
+                    normalized_queue.append(song)
+            self.pet.music_queue = normalized_queue[-25:]
+
+        music_active_cfg = data.get("music_session_active")
+        if music_active_cfg is not None:
+            self.pet.music_session_active = bool(music_active_cfg)
+
+        current_song_cfg = str(data.get("music_current_song", self.pet.music_current_song)).strip()
+        self.pet.music_current_song = current_song_cfg[:120]
+
         transcript_cfg = data.get("chat_transcript", self.pet.chat_transcript)
         if isinstance(transcript_cfg, list):
             cleaned_transcript = []
@@ -124,6 +186,11 @@ class PetStateManager:
             "pet_name": self.pet.pet_name,
             "user_name_memory": self.pet.user_name_memory,
             "pet_memory_notes": self.pet.pet_memory_notes[-20:],
+            "music_memory": self.pet.music_memory[-40:],
+            "music_personality_concepts": self.pet.music_personality_concepts[-24:],
+            "music_queue": self.pet.music_queue[-25:],
+            "music_session_active": self.pet.music_session_active,
+            "music_current_song": self.pet.music_current_song,
             "chat_transcript": self.pet.chat_transcript[-120:],
         }
         self.pet.config_store.save(self.pet.assistant_config_file, payload)

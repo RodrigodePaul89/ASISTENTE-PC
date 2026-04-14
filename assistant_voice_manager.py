@@ -1,5 +1,16 @@
 import threading
 import time
+import importlib
+
+try:
+    sc = importlib.import_module("soundcard")
+except Exception:
+    sc = None
+
+try:
+    np = importlib.import_module("numpy")
+except Exception:
+    np = None
 
 
 class VoiceManager:
@@ -10,6 +21,7 @@ class VoiceManager:
         self.tts_module = tts_module
         self.continuous_thread = None
         self.continuous_stop_event = threading.Event()
+        self.loopback_warning_shown = False
 
     def _ensure_voice_stack(self):
         if self.voice_available and self.sr_module is not None:
@@ -128,3 +140,85 @@ class VoiceManager:
             engine.runAndWait()
         except Exception as error:
             print(f"[Voz] {error}")
+
+    def transcribe_micro_snippet(self, timeout_seconds=3, phrase_time_limit=5, language="es-ES"):
+        if not self._ensure_voice_stack():
+            return ""
+
+        recognizer = self.sr_module.Recognizer()
+        try:
+            with self.sr_module.Microphone() as source:
+                recognizer.adjust_for_ambient_noise(source, duration=0.4)
+                audio = recognizer.listen(
+                    source,
+                    timeout=max(1, int(timeout_seconds)),
+                    phrase_time_limit=max(2, int(phrase_time_limit)),
+                )
+            text = recognizer.recognize_google(audio, language=language)
+            return str(text or "").strip()
+        except Exception:
+            return ""
+
+    def transcribe_system_audio_snippet(
+        self,
+        timeout_seconds=4,
+        sample_rate=16000,
+        language="es-ES",
+    ):
+        if not self._ensure_voice_stack():
+            return ""
+
+        if sc is None or np is None:
+            if not self.loopback_warning_shown:
+                print("[Audio] Loopback no disponible (instala soundcard).")
+                self.loopback_warning_shown = True
+            return ""
+
+        try:
+            speaker = sc.default_speaker()
+            if speaker is None:
+                return ""
+
+            recorder = speaker.recorder(samplerate=int(sample_rate), channels=1, blocksize=1024)
+            chunks = []
+            with recorder:
+                start = time.time()
+                while time.time() - start < max(1, int(timeout_seconds)):
+                    frame = recorder.record(numframes=1024)
+                    if frame is None:
+                        continue
+                    chunks.append(frame)
+
+            if not chunks:
+                return ""
+
+            mono = np.concatenate(chunks, axis=0)
+            if mono.size <= 0:
+                return ""
+
+            peak = float(np.max(np.abs(mono))) if mono.size else 0.0
+            if peak < 0.01:
+                return ""
+
+            mono = np.clip(mono, -1.0, 1.0)
+            pcm16 = (mono * 32767).astype(np.int16)
+            raw_bytes = pcm16.tobytes()
+
+            recognizer = self.sr_module.Recognizer()
+            audio_data = self.sr_module.AudioData(raw_bytes, int(sample_rate), 2)
+            text = recognizer.recognize_google(audio_data, language=language)
+            return str(text or "").strip()
+        except Exception:
+            return ""
+
+    def transcribe_music_learning_snippet(self):
+        # Prioriza audio del sistema; si no hay loopback o no detecta voz, cae a microfono.
+        system_text = self.transcribe_system_audio_snippet(timeout_seconds=4, sample_rate=16000, language="es-ES")
+        if system_text:
+            return system_text, "system"
+
+        mic_text = self.transcribe_micro_snippet(timeout_seconds=3, phrase_time_limit=5, language="es-ES")
+        if mic_text:
+            return mic_text, "microphone"
+
+        return "", "none"

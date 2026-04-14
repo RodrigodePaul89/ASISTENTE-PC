@@ -4,8 +4,11 @@ import json
 import os
 import shutil
 import subprocess
+import threading
 import time
 import webbrowser
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -46,7 +49,7 @@ class SystemActionManager:
             {"name": "discord", "aliases": ["disc"], "targets": ["discord", "%LOCALAPPDATA%\\Discord\\Update.exe --processStart Discord.exe"]},
             {"name": "telegram", "aliases": ["tg"], "targets": ["telegram", "%APPDATA%\\Telegram Desktop\\Telegram.exe"]},
             {"name": "whatsapp", "aliases": ["wasa", "wsp", "whats"], "targets": ["%LOCALAPPDATA%\\WhatsApp\\WhatsApp.exe", "%LOCALAPPDATA%\\Programs\\WhatsApp\\WhatsApp.exe", "whatsapp"]},
-            {"name": "spotify", "aliases": ["music spotify"], "targets": ["spotify", "%APPDATA%\\Spotify\\Spotify.exe"]},-
+            {"name": "spotify", "aliases": ["music spotify"], "targets": ["spotify", "%APPDATA%\\Spotify\\Spotify.exe"]},
             {"name": "steam", "aliases": ["juegos steam"], "targets": ["steam"]},
             {"name": "epic", "aliases": ["epic games", "epic launcher"], "targets": ["com.epicgames.launcher://apps", "EpicGamesLauncher.exe"]},
             {"name": "riot", "aliases": ["riot client", "valorant"], "targets": ["RiotClientServices.exe"]},
@@ -500,6 +503,288 @@ class SystemActionManager:
                 messagebox.showerror("Error", f"No pude abrir la URL.\n{error}", parent=self.owner.root)
             return False
 
+    def _normalize_song_query(self, song_query):
+        query = str(song_query or "").strip()
+        if not query:
+            return ""
+
+        noise_tokens = (
+            "en youtube music",
+            "en youtu music",
+            "en youtube",
+            "en yutu",
+            "youtube music",
+            "yutu music",
+            "por favor",
+            "para mimi",
+            "mimi",
+        )
+        lowered = query.lower()
+        for token in noise_tokens:
+            lowered = lowered.replace(token, " ")
+
+        cleaned = " ".join(lowered.split()).strip(" .,:;!?")
+        return cleaned
+
+    def _extract_artist_title_from_query(self, song_query):
+        raw = str(song_query or "").strip()
+        if not raw:
+            return "", ""
+
+        if " - " in raw:
+            artist, title = raw.split(" - ", 1)
+            return artist.strip(), title.strip()
+
+        lower = raw.lower()
+        marker = " de "
+        if marker in lower:
+            index = lower.rfind(marker)
+            title = raw[:index].strip()
+            artist = raw[index + len(marker) :].strip()
+            return artist, title
+
+        marker = " by "
+        if marker in lower:
+            index = lower.rfind(marker)
+            title = raw[:index].strip()
+            artist = raw[index + len(marker) :].strip()
+            return artist, title
+
+        return "", ""
+
+    def _fetch_lyrics_snippet(self, song_query, max_chars=700):
+        artist, title = self._extract_artist_title_from_query(song_query)
+        if not artist or not title:
+            return ""
+
+        api_url = f"https://api.lyrics.ovh/v1/{urllib.parse.quote(artist)}/{urllib.parse.quote(title)}"
+        request = urllib.request.Request(api_url, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=4) as response:
+                raw = response.read().decode("utf-8", errors="ignore")
+            payload = json.loads(raw)
+            lyrics = str(payload.get("lyrics", "")).strip()
+            if not lyrics:
+                return ""
+
+            compact = " ".join(lyrics.split())
+            return compact[: max(120, int(max_chars))]
+        except Exception:
+            return ""
+
+    def _extract_music_concepts(self, text, max_concepts=6):
+        raw = str(text or "").lower()
+        if not raw:
+            return []
+
+        normalized = re.sub(r"[^a-zA-Z0-9\sáéíóúüñ]", " ", raw)
+        tokens = [token.strip() for token in normalized.split() if len(token.strip()) >= 4]
+        if not tokens:
+            return []
+
+        stopwords = {
+            "para",
+            "porque",
+            "como",
+            "esta",
+            "este",
+            "that",
+            "with",
+            "from",
+            "your",
+            "have",
+            "pero",
+            "donde",
+            "cuando",
+            "quien",
+            "what",
+            "will",
+            "just",
+            "into",
+            "then",
+            "them",
+            "they",
+            "you",
+            "your",
+            "music",
+            "song",
+            "cancion",
+            "youtube",
+            "lyrics",
+        }
+
+        ranking = {}
+        for token in tokens:
+            if token in stopwords:
+                continue
+            ranking[token] = ranking.get(token, 0) + 1
+
+        if not ranking:
+            return []
+
+        sorted_tokens = sorted(ranking.items(), key=lambda item: (-item[1], item[0]))
+        return [token for token, _count in sorted_tokens[: max(1, int(max_concepts))]]
+
+    def _merge_music_concepts(self, concepts):
+        source = list(getattr(self.owner, "music_personality_concepts", []))
+        for concept in concepts:
+            clean = str(concept).strip().lower()
+            if clean and clean not in source:
+                source.append(clean)
+        self.owner.music_personality_concepts = source[-24:]
+
+    def remember_song_request(self, song_query, source="youtube_music"):
+        cleaned = self._normalize_song_query(song_query)
+        if not cleaned:
+            return False, False
+
+        if not isinstance(getattr(self.owner, "music_memory", None), list):
+            self.owner.music_memory = []
+
+        lyrics_snippet = self._fetch_lyrics_snippet(cleaned)
+        concepts = self._extract_music_concepts(f"{cleaned} {lyrics_snippet}", max_concepts=6)
+        self._merge_music_concepts(concepts)
+
+        entry = {
+            "timestamp": int(time.time()),
+            "query": cleaned[:120],
+            "source": str(source or "youtube_music")[:30],
+            "lyrics_snippet": lyrics_snippet[:180],
+            "concepts": concepts,
+        }
+
+        self.owner.music_memory.append(entry)
+        self.owner.music_memory = self.owner.music_memory[-40:]
+        self.owner.save_assistant_config()
+        return True, bool(lyrics_snippet)
+
+    def _capture_song_learning_async(self, song_query):
+        if not hasattr(self.owner, "voice_manager"):
+            return
+
+        def worker():
+            snippet, source = self.owner.voice_manager.transcribe_music_learning_snippet()
+            snippet = str(snippet or "").strip()
+            if not snippet:
+                return
+
+            concepts = self._extract_music_concepts(snippet, max_concepts=5)
+            if not concepts:
+                return
+
+            self._merge_music_concepts(concepts)
+            if isinstance(getattr(self.owner, "music_memory", None), list) and self.owner.music_memory:
+                self.owner.music_memory[-1]["micro_snippet"] = snippet[:140]
+                self.owner.music_memory[-1]["transcription_source"] = source
+                self.owner.music_memory[-1]["concepts"] = list(
+                    dict.fromkeys(
+                        list(self.owner.music_memory[-1].get("concepts", [])) + concepts
+                    )
+                )[:8]
+            self.owner.save_assistant_config()
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def play_song_on_youtube_music(self, song_query, auto=False):
+        if not self.owner.has_permission("media"):
+            self.append_action_log("music_play", str(song_query or ""), "blocked-permission")
+            return False, False
+
+        cleaned = self._normalize_song_query(song_query)
+        if not cleaned:
+            return False, False
+
+        query_param = urllib.parse.quote_plus(cleaned)
+        target_url = f"https://music.youtube.com/search?q={query_param}"
+
+        try:
+            webbrowser.open(target_url, new=2)
+            self.owner.stats["pc_actions"] += 1
+            remembered, has_lyrics = self.remember_song_request(cleaned, source="youtube_music")
+            self.owner.activate_music_session(cleaned)
+            self._capture_song_learning_async(cleaned)
+            status = "ok" if remembered else "ok-no-memory"
+            self.append_action_log("music_play", cleaned, status)
+            return True, has_lyrics
+        except Exception as error:
+            self.append_action_log("music_play", cleaned, f"error:{error}")
+            if not auto:
+                messagebox.showerror("Error", f"No pude abrir YouTube Music.\n{error}", parent=self.owner.root)
+            return False, False
+
+    def queue_song_for_next(self, song_query):
+        cleaned = self._normalize_song_query(song_query)
+        if not cleaned:
+            return False
+        if not isinstance(getattr(self.owner, "music_queue", None), list):
+            self.owner.music_queue = []
+        self.owner.music_queue.append(cleaned[:120])
+        self.owner.music_queue = self.owner.music_queue[-25:]
+        self.owner.save_assistant_config()
+        self.append_action_log("music_queue", cleaned, "ok")
+        return True
+
+    def play_next_queued_song(self):
+        if not isinstance(getattr(self.owner, "music_queue", None), list) or not self.owner.music_queue:
+            return False, "No hay canciones en cola."
+        next_song = self.owner.music_queue.pop(0)
+        self.owner.save_assistant_config()
+        ok, _has_lyrics = self.play_song_on_youtube_music(next_song, auto=True)
+        if not ok:
+            return False, "No pude reproducir la siguiente cancion."
+        return True, f"Ahora suena: {next_song}."
+
+    def _send_key_combo_ctrl_w(self):
+        if os.name != "nt":
+            return False
+        try:
+            user32 = ctypes.windll.user32
+            vk_ctrl = 0x11
+            vk_w = 0x57
+            user32.keybd_event(vk_ctrl, 0, 0, 0)
+            user32.keybd_event(vk_w, 0, 0, 0)
+            user32.keybd_event(vk_w, 0, 2, 0)
+            user32.keybd_event(vk_ctrl, 0, 2, 0)
+            return True
+        except Exception:
+            return False
+
+    def exit_music_session(self):
+        if isinstance(getattr(self.owner, "music_queue", None), list):
+            self.owner.music_queue.clear()
+
+        try:
+            self.control_media_key("play_pause", auto=True)
+        except Exception:
+            pass
+
+        active_title = self.get_active_window_title().lower()
+        if "youtube music" in active_title:
+            self._send_key_combo_ctrl_w()
+
+        self.owner.deactivate_music_session()
+        self.owner.save_assistant_config()
+        self.append_action_log("music_exit", "session", "ok")
+        return True
+
+    def build_window_personalized_message(self, window_title):
+        title = str(window_title or "").strip()
+        lower = title.lower()
+        if not title:
+            return "No detecto ventana activa ahora mismo."
+
+        if "youtube music" in lower:
+            return "Veo YouTube Music activo. Puedo aprender conceptos de la cancion mientras suena."
+        if any(token in lower for token in ("whatsapp", "telegram", "discord")):
+            return "Veo mensajeria abierta. Si quieres, te recuerdo responder mensajes importantes."
+        if any(token in lower for token in ("visual studio code", "pycharm", "terminal", "powershell")):
+            return "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+        if any(token in lower for token in ("chrome", "edge", "firefox", "brave")):
+            return "Estas navegando. Si me dices !play o !next puedo gestionar la musica sin perder contexto."
+        if any(token in lower for token in ("word", "excel", "powerpoint", "notion")):
+            return "Veo una app de productividad. Si quieres, te creo una nota de seguimiento rapida."
+        return f"Ventana activa: {title}. Estoy atenta al contexto de tu pantalla."
+
     def create_note(self, note_title, note_content):
         if not self.owner.has_permission("files"):
             self.append_action_log("create_note", note_title, "blocked-permission")
@@ -906,6 +1191,10 @@ class SystemActionManager:
             "escritorio",
             "cancion",
             "musica",
+            "youtube music",
+            "reproduce",
+            "pon una cancion",
+            "pon cancion",
             "pausa",
             "siguiente",
             "anterior",
