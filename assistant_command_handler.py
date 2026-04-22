@@ -131,7 +131,7 @@ class AssistantCommandHandler:
         if lower == "musichelp":
             return (
                 "Comandos musicales disponibles:\n"
-                "- !play <cancion> : busca y reproduce ahora en YouTube Music\n"
+                "- !play <cancion> : busca y reproduce en segundo plano desde YouTube\n"
                 "- !next <cancion> : agrega la cancion a la cola\n"
                 "- !queue : muestra la cola actual\n"
                 "- !exit : cierra sesion musical y limpia cola"
@@ -153,12 +153,19 @@ class AssistantCommandHandler:
             query = body[5:].strip()
             if not query:
                 return "Indica la cancion: !play nombre"
-            ok, has_lyrics = self.owner.action_manager.play_song_on_youtube_music(query, auto=True)
+            ok, has_lyrics, title, _lyrics = self.owner.action_manager.play_song_on_youtube_music(query, auto=True)
             if not ok:
-                return "No pude reproducir esa cancion ahora."
+                detail = str(getattr(self.owner, "last_music_error_detail", "")).strip()
+                if detail:
+                    return (
+                        "No pude reproducir esa cancion en segundo plano. "
+                        f"Detalle tecnico: {detail}."
+                    )
+                return "No pude reproducir esa cancion en segundo plano. Verifica yt-dlp y backend local (pygame+winsound+ffmpeg)."
+            final_title = title or query
             if has_lyrics:
-                return "Reproduciendo ahora. Aprendi conceptos y una parte de la letra."
-            return "Reproduciendo ahora. Aprendi conceptos principales de la cancion."
+                return f"Listo, ya esta sonando: {final_title}. Aprendi conceptos y una parte de la letra."
+            return f"Listo, ya esta sonando: {final_title}. Aprendi conceptos principales de la cancion."
 
         if lower.startswith("next "):
             query = body[5:].strip()
@@ -347,6 +354,87 @@ class AssistantCommandHandler:
             if not title:
                 return "No pude leer la ventana activa en este momento."
             return f"Ventana activa detectada: {title}."
+
+        if self._match(command, "estado contexto navegador", "estado brave extension", "estado extension brave"):
+            enabled = "activo" if bool(getattr(self.owner, "browser_context_server_enabled", False)) else "inactivo"
+            port = int(getattr(self.owner, "browser_context_port", 37655))
+            return f"Servidor de contexto navegador: {enabled} en 127.0.0.1:{port}."
+
+        if self._match(command, "activar contexto navegador", "activar extension navegador"):
+            self.owner.browser_context_server_enabled = True
+            self.owner.start_browser_context_server()
+            self.owner.save_assistant_config()
+            return f"Contexto de navegador activado en 127.0.0.1:{self.owner.browser_context_port}."
+
+        if self._match(command, "desactivar contexto navegador", "desactivar extension navegador"):
+            self.owner.browser_context_server_enabled = False
+            self.owner.stop_browser_context_server()
+            self.owner.save_assistant_config()
+            return "Contexto de navegador desactivado."
+
+        if self._match(command, "activar modo compania", "modo companera", "modo consejera"):
+            self.owner.companion_mode_enabled = True
+            self.owner.save_assistant_config()
+            return "Modo compania activado. Sere mas cercana y proactiva en apoyo cotidiano."
+
+        if self._match(command, "desactivar modo compania", "quitar modo companera", "modo asistente normal"):
+            self.owner.companion_mode_enabled = False
+            self.owner.save_assistant_config()
+            return "Modo compania desactivado. Vuelvo a modo asistente general."
+
+        if self._match(command, "activar burbuja automatica", "chat automatico", "abrir chat automatico"):
+            self.owner.auto_open_chat_on_context = True
+            self.owner.save_assistant_config()
+            return "Burbuja automatica activada segun el contexto de pantalla."
+
+        if self._match(command, "desactivar burbuja automatica", "quitar chat automatico"):
+            self.owner.auto_open_chat_on_context = False
+            self.owner.save_assistant_config()
+            return "Burbuja automatica desactivada."
+
+        if self._match(command, "activar investigacion en segundo plano", "activar consulta en segundo plano"):
+            self.owner.proactive_research_enabled = True
+            self.owner.save_assistant_config()
+            return "Investigacion en segundo plano activada para temas detectados en tus ventanas."
+
+        if self._match(command, "desactivar investigacion en segundo plano", "desactivar consulta en segundo plano"):
+            self.owner.proactive_research_enabled = False
+            self.owner.save_assistant_config()
+            return "Investigacion en segundo plano desactivada."
+
+        if self._match(command, "mostrar intereses", "perfil de intereses", "que intereses detectaste"):
+            profile = list(getattr(self.owner, "interest_profile", []))
+            if not profile:
+                return "Aun no detecto intereses frecuentes."
+            ranked = sorted(profile, key=lambda item: -float(item.get("score", 0.0)))
+            lines = ["Intereses detectados:"]
+            for item in ranked[:10]:
+                lines.append(f"- {item.get('topic', 'tema')} (afinidad {float(item.get('score', 0.0)):.1f})")
+            return "\n".join(lines)
+
+        if self._match(command, "mostrar conocimiento", "que aprendiste sola", "memoria de conocimiento"):
+            knowledge = list(getattr(self.owner, "background_knowledge", []))
+            if not knowledge:
+                return "Todavia no tengo conocimiento tematico aprendido en segundo plano."
+            lines = ["Conocimiento tematico reciente:"]
+            for item in knowledge[-8:]:
+                topic = str(item.get("topic", "tema")).strip()
+                summary = str(item.get("summary", "")).strip()
+                if topic and summary:
+                    lines.append(f"- {topic}: {summary[:140]}")
+            return "\n".join(lines)
+
+        if self._match(command, "estructura de mimi", "de que estas hecha", "como esta hecho tu codigo"):
+            return actions.get_self_structure_summary()
+
+        if command.startswith("buscar en codigo "):
+            query = raw_command[raw_command.lower().find("buscar en codigo") + len("buscar en codigo ") :].strip()
+            if not query:
+                return "Dime que texto quieres buscar dentro del codigo."
+            results = actions.search_project_code(query, limit=8)
+            if not results:
+                return "No encontre coincidencias en los archivos Python del proyecto."
+            return "Coincidencias en codigo:\n- " + "\n- ".join(results)
 
         if self._match(command, "recomendacion casual", "dame recomendacion", "sugerencia casual"):
             self.owner.open_chat_bubble()
@@ -729,14 +817,21 @@ class AssistantCommandHandler:
 
             song_query = self._extract_song_request(raw_command)
             if not song_query:
-                return "Dime el nombre de la cancion para ponerla en YouTube Music."
+                return "Dime el nombre de la cancion para reproducirla desde YouTube en segundo plano."
 
-            ok, has_lyrics = actions.play_song_on_youtube_music(song_query, auto=True)
+            ok, has_lyrics, title, _lyrics = actions.play_song_on_youtube_music(song_query, auto=True)
             if not ok:
-                return "No pude abrir YouTube Music en este momento."
+                detail = str(getattr(self.owner, "last_music_error_detail", "")).strip()
+                if detail:
+                    return (
+                        "No pude reproducir la cancion en segundo plano. "
+                        f"Detalle tecnico: {detail}."
+                    )
+                return "No pude reproducir la cancion en segundo plano. Verifica yt-dlp y backend local (pygame+winsound+ffmpeg)."
+            final_title = title or song_query
             if has_lyrics:
-                return "Listo. La puse en YouTube Music y guarde una parte de la letra en mi memoria."
-            return "Listo. La puse en YouTube Music y guarde la cancion en mi memoria musical."
+                return f"Listo, ya esta sonando: {final_title}. Guarde una parte de la letra en mi memoria."
+            return f"Listo, ya esta sonando: {final_title}. Guarde la cancion en mi memoria musical."
 
         if self._match(command, "mostrar memoria musical", "memoria musical", "que canciones recuerdas"):
             return self.owner.format_music_memory()
@@ -776,6 +871,8 @@ class AssistantCommandHandler:
                 "buscar archivos, crear notas y recordatorios, abrir apps y sitios web, capturas, limpieza de escritorio, "
                 "poner canciones en YouTube Music con memoria musical y comandos !play/!next/!exit, alternar IA local/nube, editar memoria y revisar estado de Ollama, "
                 "activar voz continua y gestionar estilos visuales de la mascota. "
+                "Tambien puedo usar modo compania, abrir chat segun contexto de pantalla, investigar temas en segundo plano, "
+                "mostrar perfil de intereses y explicar mi estructura de codigo. "
                 "Modo pro: escribe 'ver alias' para shortcuts rapidos personalizados."
             )
 

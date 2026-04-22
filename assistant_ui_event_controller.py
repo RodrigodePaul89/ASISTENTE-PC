@@ -22,5 +22,7 @@ class UIEventController:
                 self.owner.append_chat_message("Mascota", payload)
             elif action == "chat_status":
                 self.owner.set_chat_status(payload)
+            elif action == "music_mini_feedback":
+                self.owner.update_music_mini_feedback(payload)
 
         self.owner.root.after(120, self.process_ui_queue)

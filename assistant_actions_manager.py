@@ -1,4 +1,5 @@
 import ctypes
+import importlib
 import re
 import json
 import os
@@ -9,6 +10,8 @@ import time
 import webbrowser
 import urllib.parse
 import urllib.request
+import tempfile
+import wave
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -685,32 +688,418 @@ class SystemActionManager:
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def _get_optional_module(self, module_name):
+        try:
+            return importlib.import_module(module_name)
+        except Exception:
+            return None
+
+    def _resolve_ffmpeg_executable(self):
+        ffmpeg_path = shutil.which("ffmpeg")
+        if ffmpeg_path:
+            return ffmpeg_path
+
+        imageio_ffmpeg = self._get_optional_module("imageio_ffmpeg")
+        if imageio_ffmpeg is not None:
+            try:
+                ffmpeg_path = str(imageio_ffmpeg.get_ffmpeg_exe()).strip()
+                if ffmpeg_path and Path(ffmpeg_path).exists():
+                    return ffmpeg_path
+            except Exception:
+                pass
+
+        return ""
+
+    def _set_music_error(self, detail):
+        try:
+            self.owner.last_music_error_detail = str(detail or "").strip()[:220]
+        except Exception:
+            pass
+
+    def _get_audio_duration_seconds(self, audio_file_path):
+        path = Path(str(audio_file_path))
+        if not path.exists():
+            return 0.0
+        if path.suffix.lower() != ".wav":
+            return 0.0
+        try:
+            with wave.open(str(path), "rb") as wav_file:
+                frames = wav_file.getnframes()
+                rate = wav_file.getframerate() or 1
+            return max(0.0, float(frames) / float(rate))
+        except Exception:
+            return 0.0
+
+    def _resolve_youtube_audio_stream(self, song_query):
+        yt_dlp = self._get_optional_module("yt_dlp")
+        if yt_dlp is None:
+            return "", ""
+
+        options = {
+            "quiet": True,
+            "no_warnings": True,
+            "noplaylist": True,
+            # Fuerza busqueda en YouTube normal (no YouTube Music web).
+            "default_search": "ytsearch",
+            "skip_download": True,
+            "extract_flat": False,
+            "format": "bestaudio/best",
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(options) as ydl:
+                info = ydl.extract_info(f"ytsearch1:{song_query}", download=False)
+            if not isinstance(info, dict):
+                return "", ""
+            entries = info.get("entries", [])
+            if not entries:
+                return "", ""
+            entry = entries[0] if isinstance(entries[0], dict) else {}
+            stream_url = str(entry.get("url", "")).strip()
+            title = str(entry.get("title", song_query)).strip()
+            return stream_url, title
+        except Exception:
+            return "", ""
+
+    def _resolve_downloaded_audio_path(self, entry, temp_root):
+        candidate_paths = []
+        if isinstance(entry, dict):
+            requested = entry.get("requested_downloads", [])
+            if isinstance(requested, list):
+                for item in requested:
+                    if not isinstance(item, dict):
+                        continue
+                    value = str(item.get("filepath", "")).strip()
+                    if value:
+                        candidate_paths.append(value)
+
+            direct_name = str(entry.get("_filename", "")).strip()
+            if direct_name:
+                candidate_paths.append(direct_name)
+
+        for raw_path in candidate_paths:
+            target = Path(raw_path)
+            if target.exists() and target.is_file() and target.stat().st_size > 0:
+                return str(target)
+
+        if not temp_root.exists():
+            return ""
+
+        audio_extensions = {".wav", ".mp3", ".ogg", ".m4a", ".webm"}
+        files = []
+        for item in temp_root.glob("mimi_*.*"):
+            if not item.is_file():
+                continue
+            if item.suffix.lower() not in audio_extensions:
+                continue
+            try:
+                size = item.stat().st_size
+                mtime = item.stat().st_mtime
+            except Exception:
+                continue
+            if size <= 0:
+                continue
+            files.append((mtime, item))
+
+        if not files:
+            return ""
+
+        files.sort(key=lambda pair: pair[0], reverse=True)
+        return str(files[0][1])
+
+    def _download_youtube_audio_file(self, song_query):
+        yt_dlp = self._get_optional_module("yt_dlp")
+        if yt_dlp is None:
+            return "", ""
+
+        temp_root = Path(tempfile.gettempdir()) / "mimi_music"
+        try:
+            temp_root.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            return "", ""
+
+        out_template = str(temp_root / "mimi_%(id)s.%(ext)s")
+        ffmpeg_executable = self._resolve_ffmpeg_executable()
+        options = {
+            "quiet": True,
+            "no_warnings": True,
+            "noplaylist": True,
+            "default_search": "ytsearch",
+            "extract_flat": False,
+            "format": "bestaudio/best",
+            "outtmpl": out_template,
+        }
+
+        if not ffmpeg_executable:
+            self._set_music_error("ffmpeg no disponible para convertir audio a WAV")
+            return "", ""
+
+        options["postprocessors"] = [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "wav",
+                "preferredquality": "192",
+            }
+        ]
+        options["ffmpeg_location"] = ffmpeg_executable
+
+        try:
+            with yt_dlp.YoutubeDL(options) as ydl:
+                info = ydl.extract_info(f"ytsearch1:{song_query}", download=True)
+            if not isinstance(info, dict):
+                return "", ""
+            entries = info.get("entries", [])
+            entry = entries[0] if entries and isinstance(entries[0], dict) else info
+            downloaded = self._resolve_downloaded_audio_path(entry, temp_root)
+            if not downloaded:
+                self._set_music_error("yt-dlp no devolvio archivo de audio descargado")
+                return "", ""
+
+            if Path(downloaded).suffix.lower() != ".wav":
+                self._set_music_error(f"archivo descargado sin WAV ({Path(downloaded).suffix.lower()})")
+                return "", ""
+
+            title = str(entry.get("title", song_query)).strip()
+            return downloaded, title
+        except Exception as error:
+            self._set_music_error(f"yt-dlp/ffmpeg fallo: {error}")
+            return "", ""
+
+    def _play_stream_with_vlc(self, stream_url):
+        vlc = self._get_optional_module("vlc")
+        if vlc is None:
+            return False
+
+        try:
+            previous_player = getattr(self.owner, "music_player", None)
+            if previous_player is not None:
+                try:
+                    previous_player.stop()
+                except Exception:
+                    pass
+
+            instance = vlc.Instance("--no-video", "--quiet")
+            player = instance.media_player_new()
+            media = instance.media_new(stream_url)
+            player.set_media(media)
+            player.play()
+
+            self.owner.music_vlc_instance = instance
+            self.owner.music_player = player
+            self.owner.music_paused = False
+            self.owner.music_backend = "vlc"
+            return True
+        except Exception:
+            return False
+
+    def _play_file_with_pygame(self, audio_file_path):
+        pygame = self._get_optional_module("pygame")
+        if pygame is None:
+            return False
+
+        try:
+            previous_backend = str(getattr(self.owner, "music_backend", ""))
+            if previous_backend == "pygame":
+                try:
+                    pygame.mixer.music.stop()
+                except Exception:
+                    pass
+
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(frequency=44100)
+
+            pygame.mixer.music.load(str(audio_file_path))
+            pygame.mixer.music.play()
+            self.owner.music_backend = "pygame"
+            self.owner.music_paused = False
+            self.owner.music_player = None
+            self.owner.music_vlc_instance = None
+            self.owner.music_temp_file = str(audio_file_path)
+            self.owner.music_track_duration_seconds = self._get_audio_duration_seconds(audio_file_path)
+            self.owner.music_track_started_at = time.time()
+            return True
+        except Exception:
+            return False
+
+    def _play_file_with_winsound(self, audio_file_path):
+        if os.name != "nt":
+            return False
+
+        winsound = self._get_optional_module("winsound")
+        if winsound is None:
+            return False
+
+        path = Path(str(audio_file_path))
+        if not path.exists() or path.suffix.lower() != ".wav":
+            return False
+
+        try:
+            winsound.PlaySound(
+                str(path),
+                winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
+            )
+            self.owner.music_backend = "winsound"
+            self.owner.music_paused = False
+            self.owner.music_player = None
+            self.owner.music_vlc_instance = None
+            self.owner.music_temp_file = str(path)
+            self.owner.music_track_duration_seconds = self._get_audio_duration_seconds(path)
+            self.owner.music_track_started_at = time.time()
+            return True
+        except Exception as error:
+            self._set_music_error(f"winsound fallo: {error}")
+            return False
+
+    def toggle_music_pause(self):
+        backend = str(getattr(self.owner, "music_backend", ""))
+        if backend == "vlc":
+            player = getattr(self.owner, "music_player", None)
+            if player is None:
+                return False
+            try:
+                player.pause()
+                self.owner.music_paused = not bool(getattr(self.owner, "music_paused", False))
+                self.append_action_log("music_pause", self.owner.music_current_song, "ok")
+                return True
+            except Exception:
+                return False
+
+        if backend == "pygame":
+            pygame = self._get_optional_module("pygame")
+            if pygame is None:
+                return False
+            try:
+                if bool(getattr(self.owner, "music_paused", False)):
+                    pygame.mixer.music.unpause()
+                    self.owner.music_paused = False
+                else:
+                    pygame.mixer.music.pause()
+                    self.owner.music_paused = True
+                self.append_action_log("music_pause", self.owner.music_current_song, "ok")
+                return True
+            except Exception:
+                return False
+
+        return False
+
+    def stop_music_playback(self):
+        stopped = False
+        backend = str(getattr(self.owner, "music_backend", ""))
+
+        if backend == "vlc":
+            player = getattr(self.owner, "music_player", None)
+            if player is not None:
+                try:
+                    player.stop()
+                    stopped = True
+                except Exception:
+                    pass
+
+        if backend == "pygame":
+            pygame = self._get_optional_module("pygame")
+            if pygame is not None:
+                try:
+                    pygame.mixer.music.stop()
+                    stopped = True
+                except Exception:
+                    pass
+
+        if backend == "winsound" and os.name == "nt":
+            winsound = self._get_optional_module("winsound")
+            if winsound is not None:
+                try:
+                    winsound.PlaySound(None, winsound.SND_PURGE)
+                    stopped = True
+                except Exception:
+                    pass
+
+        temp_file = str(getattr(self.owner, "music_temp_file", "")).strip()
+        if temp_file:
+            try:
+                Path(temp_file).unlink(missing_ok=True)
+            except Exception:
+                pass
+            self.owner.music_temp_file = ""
+
+        self.owner.music_backend = ""
+        self.owner.music_player = None
+        self.owner.music_vlc_instance = None
+        self.owner.music_paused = False
+        self.owner.music_track_started_at = 0.0
+        self.owner.music_track_duration_seconds = 0.0
+        return stopped
+
+    def _preserve_interrupted_song_learning(self):
+        current = str(getattr(self.owner, "music_current_song", "")).strip()
+        if not current:
+            return
+
+        lyrics = self._fetch_lyrics_snippet(current, max_chars=260)
+        concepts = self._extract_music_concepts(f"{current} {lyrics}", max_concepts=5)
+        self._merge_music_concepts(concepts)
+
+        if not isinstance(getattr(self.owner, "music_memory", None), list):
+            self.owner.music_memory = []
+
+        self.owner.music_memory.append(
+            {
+                "timestamp": int(time.time()),
+                "query": current[:120],
+                "source": "interrupted_review",
+                "lyrics_snippet": lyrics[:180],
+                "concepts": concepts[:8],
+                "interrupted": True,
+            }
+        )
+        self.owner.music_memory = self.owner.music_memory[-40:]
+        self.owner.save_assistant_config()
+
     def play_song_on_youtube_music(self, song_query, auto=False):
+        self._set_music_error("")
         if not self.owner.has_permission("media"):
             self.append_action_log("music_play", str(song_query or ""), "blocked-permission")
-            return False, False
+            return False, False, "", ""
 
         cleaned = self._normalize_song_query(song_query)
         if not cleaned:
-            return False, False
+            return False, False, "", ""
 
-        query_param = urllib.parse.quote_plus(cleaned)
-        target_url = f"https://music.youtube.com/search?q={query_param}"
+        if bool(getattr(self.owner, "music_session_active", False)):
+            self._preserve_interrupted_song_learning()
+            self.stop_music_playback()
+
+        audio_file, real_title = self._download_youtube_audio_file(cleaned)
+        if not audio_file:
+            self.append_action_log("music_play", cleaned, "error:no-source")
+            return False, False, "", ""
 
         try:
-            webbrowser.open(target_url, new=2)
+            # Prioriza winsound (WAV nativo en Windows) y usa pygame como respaldo.
+            playback_ok = self._play_file_with_winsound(audio_file)
+            if not playback_ok:
+                playback_ok = self._play_file_with_pygame(audio_file)
+
+            if not playback_ok:
+                self.append_action_log("music_play", cleaned, "error:no-backend")
+                return False, False, "", ""
+
             self.owner.stats["pc_actions"] += 1
-            remembered, has_lyrics = self.remember_song_request(cleaned, source="youtube_music")
-            self.owner.activate_music_session(cleaned)
+            remembered, has_lyrics = self.remember_song_request(cleaned, source="youtube")
+            lyrics_preview = ""
+            if isinstance(getattr(self.owner, "music_memory", None), list) and self.owner.music_memory:
+                lyrics_preview = str(self.owner.music_memory[-1].get("lyrics_snippet", "")).strip()
+            final_title = real_title or cleaned
+            self.owner.activate_music_session(final_title, lyrics_preview)
             self._capture_song_learning_async(cleaned)
             status = "ok" if remembered else "ok-no-memory"
             self.append_action_log("music_play", cleaned, status)
-            return True, has_lyrics
+            return True, has_lyrics, final_title, lyrics_preview
         except Exception as error:
+            self._set_music_error(error)
             self.append_action_log("music_play", cleaned, f"error:{error}")
             if not auto:
-                messagebox.showerror("Error", f"No pude abrir YouTube Music.\n{error}", parent=self.owner.root)
-            return False, False
+                messagebox.showerror("Error", f"No pude reproducir la cancion.\n{error}", parent=self.owner.root)
+            return False, False, "", ""
 
     def queue_song_for_next(self, song_query):
         cleaned = self._normalize_song_query(song_query)
@@ -729,10 +1118,11 @@ class SystemActionManager:
             return False, "No hay canciones en cola."
         next_song = self.owner.music_queue.pop(0)
         self.owner.save_assistant_config()
-        ok, _has_lyrics = self.play_song_on_youtube_music(next_song, auto=True)
+        ok, _has_lyrics, title, _lyrics = self.play_song_on_youtube_music(next_song, auto=True)
         if not ok:
             return False, "No pude reproducir la siguiente cancion."
-        return True, f"Ahora suena: {next_song}."
+        final_name = title or next_song
+        return True, f"Ahora suena: {final_name}."
 
     def _send_key_combo_ctrl_w(self):
         if os.name != "nt":
@@ -753,14 +1143,7 @@ class SystemActionManager:
         if isinstance(getattr(self.owner, "music_queue", None), list):
             self.owner.music_queue.clear()
 
-        try:
-            self.control_media_key("play_pause", auto=True)
-        except Exception:
-            pass
-
-        active_title = self.get_active_window_title().lower()
-        if "youtube music" in active_title:
-            self._send_key_combo_ctrl_w()
+        self.stop_music_playback()
 
         self.owner.deactivate_music_session()
         self.owner.save_assistant_config()
@@ -784,6 +1167,259 @@ class SystemActionManager:
         if any(token in lower for token in ("word", "excel", "powerpoint", "notion")):
             return "Veo una app de productividad. Si quieres, te creo una nota de seguimiento rapida."
         return f"Ventana activa: {title}. Estoy atenta al contexto de tu pantalla."
+
+    def extract_interest_topic_from_title(self, window_title):
+        title = str(window_title or "").strip()
+        if not title:
+            return ""
+
+        for suffix in (" - Brave", " - Google Chrome", " - Microsoft Edge", " - Mozilla Firefox"):
+            if title.endswith(suffix):
+                title = title[: -len(suffix)].strip()
+                break
+
+        lowered = title.lower()
+        for separator in (" - ", " | ", " : "):
+            if separator in title:
+                parts = [part.strip() for part in title.split(separator) if part.strip()]
+                if parts:
+                    title = parts[0]
+                    lowered = title.lower()
+                    break
+
+        app_noise = {
+            "google chrome",
+            "chrome",
+            "microsoft edge",
+            "edge",
+            "firefox",
+            "brave",
+            "visual studio code",
+            "vscode",
+            "terminal",
+            "powershell",
+            "youtube music",
+            "program manager",
+            "tk",
+        }
+        if lowered in app_noise:
+            return ""
+
+        normalized = re.sub(r"[^a-zA-Z0-9\sáéíóúüñ]", " ", title.lower())
+        tokens = [token for token in normalized.split() if len(token) >= 3]
+        stopwords = {
+            "the",
+            "and",
+            "para",
+            "con",
+            "sobre",
+            "from",
+            "this",
+            "that",
+            "como",
+            "una",
+            "uno",
+            "page",
+            "tab",
+            "window",
+            "windows",
+            "nueva",
+            "nuevo",
+        }
+        keywords = [token for token in tokens if token not in stopwords]
+        if not keywords:
+            return ""
+
+        topic = " ".join(keywords[:4]).strip()
+        return topic[:60]
+
+    def update_interest_profile_from_window(self, window_title):
+        topic = self.extract_interest_topic_from_title(window_title)
+        if not topic:
+            return ""
+
+        profile = list(getattr(self.owner, "interest_profile", []))
+        matched = False
+        for item in profile:
+            if str(item.get("topic", "")).strip().lower() == topic.lower():
+                try:
+                    current = float(item.get("score", 0.0))
+                except Exception:
+                    current = 0.0
+                item["score"] = min(25.0, current + 1.2)
+                matched = True
+                break
+
+        if not matched:
+            profile.append({"topic": topic, "score": 1.0})
+
+        for item in profile:
+            if str(item.get("topic", "")).strip().lower() != topic.lower():
+                try:
+                    current = float(item.get("score", 0.0))
+                except Exception:
+                    current = 0.0
+                item["score"] = max(0.0, current - 0.02)
+
+        profile = sorted(profile, key=lambda entry: -float(entry.get("score", 0.0)))
+        self.owner.interest_profile = profile[:40]
+        return topic
+
+    def build_emotional_checkin_message(self, window_title):
+        title = str(window_title or "").strip()
+        lower = title.lower()
+        if any(token in lower for token in ("valorant", "league", "steam", "epic", "game")):
+            return "Estoy viendo que estas jugando. Te esta haciendo bien la partida o prefieres una pausa corta?"
+        if any(token in lower for token in ("visual studio code", "pycharm", "terminal", "powershell")):
+            return "Llevas rato en modo codigo. Como te sientes con el avance: fluido, trabado o cansado?"
+        if any(token in lower for token in ("youtube", "netflix", "spotify")):
+            return "Te acompano en este momento de ocio. Te esta relajando o quieres cambiar de ritmo?"
+        return "Como te estas sintiendo ahora con lo que estas haciendo?"
+
+    def fetch_topic_background_summary(self, topic):
+        cleaned = str(topic or "").strip()
+        if not cleaned:
+            return ""
+
+        snippets = []
+
+        endpoint = f"https://es.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(cleaned)}"
+        request = urllib.request.Request(endpoint, method="GET", headers={"User-Agent": "MimiAssistant/1.0"})
+        try:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                raw = response.read().decode("utf-8", errors="ignore")
+            payload = json.loads(raw)
+            summary = str(payload.get("extract", "")).strip()
+            if summary:
+                snippets.append(summary)
+        except Exception:
+            pass
+
+        ddg_endpoint = "https://api.duckduckgo.com/?q={}&format=json&no_html=1&no_redirect=1".format(
+            urllib.parse.quote(cleaned)
+        )
+        ddg_request = urllib.request.Request(ddg_endpoint, method="GET", headers={"User-Agent": "MimiAssistant/1.0"})
+        try:
+            with urllib.request.urlopen(ddg_request, timeout=5) as response:
+                raw = response.read().decode("utf-8", errors="ignore")
+            payload = json.loads(raw)
+            abstract = str(payload.get("AbstractText", "")).strip()
+            heading = str(payload.get("Heading", "")).strip()
+            if heading and abstract:
+                snippets.append(f"{heading}: {abstract}")
+            elif abstract:
+                snippets.append(abstract)
+
+            related = payload.get("RelatedTopics", [])
+            if isinstance(related, list):
+                for item in related:
+                    if not isinstance(item, dict):
+                        continue
+                    text = str(item.get("Text", "")).strip()
+                    if text:
+                        snippets.append(text)
+                    nested = item.get("Topics", [])
+                    if isinstance(nested, list):
+                        for nested_item in nested:
+                            if not isinstance(nested_item, dict):
+                                continue
+                            nested_text = str(nested_item.get("Text", "")).strip()
+                            if nested_text:
+                                snippets.append(nested_text)
+                    if len(snippets) >= 6:
+                        break
+        except Exception:
+            pass
+
+        compact_snippets = []
+        seen = set()
+        for snippet in snippets:
+            clean = " ".join(str(snippet).split()).strip()
+            key = clean.lower()
+            if not clean or key in seen:
+                continue
+            seen.add(key)
+            compact_snippets.append(clean)
+            if len(compact_snippets) >= 4:
+                break
+
+        if compact_snippets:
+            joined = " | ".join(compact_snippets)
+            return joined[:420]
+
+        if bool(getattr(self.owner, "llm_enabled", False)):
+            prompt = (
+                "Explica de forma breve y neutral el concepto: "
+                f"{cleaned}. "
+                "No inventes hechos concretos si no estas segura. Maximo 3 frases."
+            )
+            ai_text = str(self.owner.query_optional_llm(prompt) or "").strip()
+            if ai_text:
+                return ai_text[:420]
+
+        return ""
+
+    def remember_background_knowledge(self, topic, summary):
+        cleaned_topic = str(topic or "").strip()[:70]
+        cleaned_summary = str(summary or "").strip()[:420]
+        if not cleaned_topic or not cleaned_summary:
+            return False
+
+        entries = list(getattr(self.owner, "background_knowledge", []))
+        replaced = False
+        for item in entries:
+            if str(item.get("topic", "")).strip().lower() == cleaned_topic.lower():
+                item["summary"] = cleaned_summary
+                item["timestamp"] = int(time.time())
+                replaced = True
+                break
+
+        if not replaced:
+            entries.append({"topic": cleaned_topic, "summary": cleaned_summary, "timestamp": int(time.time())})
+
+        self.owner.background_knowledge = entries[-40:]
+        return True
+
+    def get_self_structure_summary(self):
+        lines = [
+            "Estructura tecnica principal de Mimi:",
+            "- main.py: arranque, bucles de UI y coordinacion general.",
+            "- assistant_command_handler.py: interpreta comandos de voz/texto.",
+            "- assistant_actions_manager.py: acciones de sistema, contexto y utilidades.",
+            "- assistant_identity_manager.py: prompt de identidad y memoria para LLM.",
+            "- assistant_state_manager.py: carga/guardado de estado y configuracion.",
+            "- assistant_chat_controller.py: burbuja de chat y flujo de mensajes.",
+            "- assistant_voice_manager.py: escucha y respuestas por voz.",
+            "- assistant_permissions.py: control de permisos por categorias.",
+            "- assistant_config.json: configuracion persistente de Mimi.",
+        ]
+        return "\n".join(lines)
+
+    def search_project_code(self, query, limit=8):
+        needle = str(query or "").strip().lower()
+        if not needle:
+            return []
+
+        root = Path(getattr(self.owner, "asset_dir", Path.cwd()))
+        matches = []
+        try:
+            for path in root.rglob("*.py"):
+                if not path.is_file():
+                    continue
+                try:
+                    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+                except Exception:
+                    continue
+                for index, line in enumerate(lines, start=1):
+                    if needle in line.lower():
+                        rel_path = path.relative_to(root)
+                        preview = line.strip()[:100]
+                        matches.append(f"{rel_path}:{index} -> {preview}")
+                        if len(matches) >= max(1, int(limit)):
+                            return matches
+        except Exception:
+            return []
+        return matches
 
     def create_note(self, note_title, note_content):
         if not self.owner.has_permission("files"):

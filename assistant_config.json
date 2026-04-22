@@ -6,15 +6,324 @@
   "voice_phrase_timeout_seconds": 2,
   "voice_phrase_max_seconds": 5,
   "permission_level": "full",
-  "llm_enabled": true,
-  "llm_provider": "ollama",
+  "llm_enabled": false,
+  "llm_provider": "openai",
   "llm_model": "qwen2.5:1.5b-instruct",
-  "llm_endpoint": "http://127.0.0.1:11434/api/chat",
-  "llm_offline_only": true,
+  "llm_endpoint": "https://api.openai.com/v1/chat/completions",
+  "llm_offline_only": false,
   "functional_automation_enabled": false,
+  "companion_mode_enabled": true,
+  "auto_open_chat_on_context": true,
+  "proactive_research_enabled": true,
+  "browser_context_server_enabled": true,
+  "browser_context_port": 37655,
   "pet_name": "Mimi",
   "user_name_memory": "Saul",
   "pet_memory_notes": [],
+  "music_memory": [
+    {
+      "timestamp": 1776169617,
+      "query": "doma",
+      "source": "youtube_music",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "doma"
+      ]
+    },
+    {
+      "timestamp": 1776888686,
+      "query": "la noche mas linda",
+      "source": "youtube_music_browser",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "linda",
+        "noche"
+      ]
+    },
+    {
+      "timestamp": 1776888727,
+      "query": "doma",
+      "source": "youtube_music_browser",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "doma"
+      ]
+    },
+    {
+      "timestamp": 1776890222,
+      "query": "la noche mas linda del mundo",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "linda",
+        "mundo",
+        "noche"
+      ]
+    },
+    {
+      "timestamp": 1776890245,
+      "query": "La Noche Mas Linda",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "linda",
+        "noche"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890249,
+      "query": "doma",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "doma"
+      ]
+    },
+    {
+      "timestamp": 1776890272,
+      "query": "Jo\u0301sean Log - Doma (Lyric Video)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "Que fatalidad, eres mi h\u00e9roe y mi villana Podr\u00eda enloquecer descifrando tu conspiraci\u00f3n Muero por saber el desenlace de esta trama comienza a Anochecer y el coraz\u00f3n va al descubier",
+      "concepts": [
+        "anochecer",
+        "caricias",
+        "comienza",
+        "conspiraci\u00f3n",
+        "coraz\u00f3n"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890277,
+      "query": "the winner takes all",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "takes",
+        "winner"
+      ]
+    },
+    {
+      "timestamp": 1776890593,
+      "query": "ABBA - The Winner Takes It All",
+      "source": "interrupted_review",
+      "lyrics_snippet": "I don't wanna talk About the things we've gone through Though it's hurting me Now it's history I've played all my cards And that's what you've done too Nothing more to say No more ",
+      "concepts": [
+        "more",
+        "takes",
+        "winner",
+        "abba",
+        "about"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890597,
+      "query": "doma",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "doma"
+      ]
+    },
+    {
+      "timestamp": 1776890715,
+      "query": "Jo\u0301sean Log - Doma (Lyric Video)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "Que fatalidad, eres mi h\u00e9roe y mi villana Podr\u00eda enloquecer descifrando tu conspiraci\u00f3n Muero por saber el desenlace de esta trama comienza a Anochecer y el coraz\u00f3n va al descubier",
+      "concepts": [
+        "anochecer",
+        "caricias",
+        "comienza",
+        "conspiraci\u00f3n",
+        "coraz\u00f3n"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890719,
+      "query": "sexytekk",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "sexytekk"
+      ]
+    },
+    {
+      "timestamp": 1776890915,
+      "query": "SEXYTEKK (Ultra Slowed)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "sexytekk",
+        "slowed",
+        "ultra"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890923,
+      "query": "te extra\u00f1o - xtreme",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "extra\u00f1o",
+        "xtreme"
+      ]
+    },
+    {
+      "timestamp": 1776890957,
+      "query": "Xtreme - Te Extra\u00f1o (Bachata Version) | Visualizer",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "bachata",
+        "extra\u00f1o",
+        "version",
+        "visualizer",
+        "xtreme"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890961,
+      "query": "con el viento a tu favor",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "favor",
+        "viento"
+      ]
+    },
+    {
+      "timestamp": 1776890977,
+      "query": "Camilo Sesto - Con el viento a tu favor",
+      "source": "interrupted_review",
+      "lyrics_snippet": "No s\u00e8 cuando sufro m\u00e0s. Si am\u00e0ndote o queri\u00e8ndote olvidar. Que amargo es amar sin ser amado, y sentirse atado a los recuerdos de un pasado. Camino perdido entre dos aguas, sintiend",
+      "concepts": [
+        "ndote",
+        "aguas",
+        "amado",
+        "amar",
+        "amargo"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776890982,
+      "query": "welcome to my crib",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "crib",
+        "welcome"
+      ]
+    },
+    {
+      "timestamp": 1776891161,
+      "query": "Welcome To My Crib",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "crib",
+        "welcome"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776891165,
+      "query": "con el viento a tu favor",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "favor",
+        "viento"
+      ]
+    },
+    {
+      "timestamp": 1776891492,
+      "query": "Camilo Sesto - Con el viento a tu favor",
+      "source": "interrupted_review",
+      "lyrics_snippet": "No s\u00e8 cuando sufro m\u00e0s. Si am\u00e0ndote o queri\u00e8ndote olvidar. Que amargo es amar sin ser amado, y sentirse atado a los recuerdos de un pasado. Camino perdido entre dos aguas, sintiend",
+      "concepts": [
+        "ndote",
+        "aguas",
+        "amado",
+        "amar",
+        "amargo"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776891497,
+      "query": "vitamina",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "vitamina"
+      ]
+    },
+    {
+      "timestamp": 1776891620,
+      "query": "Jombriel, DFZM - Vitamina (Video Oficial)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "Mami, long time sin saber de ti, merco una moto pa' llegarte, ma Ahora la vuelta e' distinta, pasa'o de tinta Le met\u00ed quinta, ya voy por ah\u00ed, yo le caigo de una ve' De Esmeralda' l",
+      "concepts": [
+        "ahora",
+        "baj\u00e9",
+        "caigo",
+        "cambiamo",
+        "conocer"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776891626,
+      "query": "sirena encantada",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "encantada",
+        "sirena"
+      ]
+    }
+  ],
+  "music_personality_concepts": [
+    "slowed",
+    "ultra",
+    "extra\u00f1o",
+    "xtreme",
+    "bachata",
+    "version",
+    "visualizer",
+    "favor",
+    "viento",
+    "ndote",
+    "aguas",
+    "amado",
+    "amar",
+    "amargo",
+    "crib",
+    "welcome",
+    "vitamina",
+    "ahora",
+    "baj\u00e9",
+    "caigo",
+    "cambiamo",
+    "conocer",
+    "encantada",
+    "sirena"
+  ],
+  "music_queue": [],
+  "music_session_active": true,
+  "music_current_song": "Sirena Encantada, Miguel Morales, Video Letra - Sentir Vallenato",
   "chat_transcript": [
     [
       "Mascota",
@@ -26,99 +335,311 @@
     ],
     [
       "Tu",
-      "hola"
+      "!play la noche mas linda del mundo"
     ],
     [
       "Mascota",
-      "Hola, soy Mimi. Estoy lista para asistirte."
+      "No pude reproducir esa cancion en segundo plano. Detalle tecnico: ffmpeg no disponible para convertir audio a WAV."
     ],
     [
       "Tu",
-      "hl"
+      "!play doma"
     ],
     [
       "Mascota",
-      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+      "No pude reproducir esa cancion en segundo plano. Detalle tecnico: ffmpeg no disponible para convertir audio a WAV."
+    ],
+    [
+      "Mimi",
+      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Como te estas sintiendo ahora con lo que estas haciendo?"
     ],
     [
       "Tu",
-      "you are my friend?"
+      "!play la noche mas linda del mundo"
     ],
     [
       "Mascota",
-      "No detecte que aplicacion abrir."
+      "Listo, ya esta sonando: La Noche Mas Linda. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Mimi",
+      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
     ],
     [
       "Tu",
-      "pon una cancion en yutu"
+      "!next doma"
     ],
     [
       "Mascota",
-      "No entendi ese comando todavia, pero puedo aprender mas funciones."
+      "Agregada a la cola: doma."
+    ],
+    [
+      "Mimi",
+      "Ahora suena: Jo\u0301sean Log - Doma (Lyric Video)."
+    ],
+    [
+      "Mimi",
+      "La cola musical esta vacia."
+    ],
+    [
+      "Mimi",
+      "La cola musical esta vacia."
     ],
     [
       "Tu",
-      "elimina la carpeta"
+      "!play the winner takes all"
     ],
     [
       "Mascota",
-      "Entendi esto: eliminar la carpeta del escritorio. Estas seguro de realizar el cambio especificado?, si/no."
+      "Listo, ya esta sonando: ABBA - The Winner Takes It All. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Mimi",
+      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
     ],
     [
       "Tu",
-      "no"
+      "!next doma"
     ],
     [
       "Mascota",
-      "Cancelado: eliminar la carpeta del escritorio."
+      "Agregada a la cola: doma."
+    ],
+    [
+      "Mimi",
+      "Veo mensajeria abierta. Si quieres, te recuerdo responder mensajes importantes."
+    ],
+    [
+      "Mimi",
+      "Ahora suena: Jo\u0301sean Log - Doma (Lyric Video)."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Como te estas sintiendo ahora con lo que estas haciendo?"
+    ],
+    [
+      "Mimi",
+      "La cola musical esta vacia."
+    ],
+    [
+      "Mimi",
+      "La cola musical esta vacia."
+    ],
+    [
+      "Mimi",
+      "La cola musical esta vacia."
     ],
     [
       "Tu",
-      "elimina la carpeta \"ivanesgey\" del escritorio"
+      "!play SEXYTEKK"
     ],
     [
       "Mascota",
-      "Entendi esto: eliminar la carpeta ivanesgey del escritorio del escritorio. Estas seguro de realizar el cambio especificado?, si/no."
+      "Listo, ya esta sonando: SEXYTEKK (Ultra Slowed). Aprendi conceptos principales de la cancion."
     ],
     [
       "Tu",
-      "si"
+      "!next te extra\u00f1o - xtreme"
     ],
     [
       "Mascota",
-      "No pude completar esto: eliminar la carpeta ivanesgey del escritorio del escritorio."
+      "Agregada a la cola: te extra\u00f1o - xtreme."
     ],
     [
       "Tu",
-      "app +wasa"
+      "!next welcome to my crib"
     ],
     [
       "Mascota",
-      "Entendi esto: abrir la aplicacion wasa. Estas seguro de realizar el cambio especificado?, si/no."
+      "Agregada a la cola: welcome to my crib."
+    ],
+    [
+      "Mimi",
+      "Ahora suena: Xtreme - Te Extra\u00f1o (Bachata Version) | Visualizer."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: Program Manager. Estoy atenta al contexto de tu pantalla."
     ],
     [
       "Tu",
-      "si"
+      "!play con el viento a tu favor"
     ],
     [
       "Mascota",
-      "No pude completar esto: abrir la aplicacion wasa."
+      "Listo, ya esta sonando: Camilo Sesto - Con el viento a tu favor. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Mimi",
+      "Ahora suena: Welcome To My Crib."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: Program Manager. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Como te estas sintiendo ahora con lo que estas haciendo?"
     ],
     [
       "Tu",
-      "app +code"
+      "!play con el viento a tu favor"
     ],
     [
       "Mascota",
-      "Entendi esto: abrir la aplicacion code. Estas seguro de realizar el cambio especificado?, si/no."
+      "Listo, ya esta sonando: Camilo Sesto - Con el viento a tu favor. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Mimi",
+      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
     ],
     [
       "Tu",
-      "si"
+      "!play vitamina"
     ],
     [
       "Mascota",
-      "Listo. abrir la aplicacion code."
+      "Listo, ya esta sonando: Jombriel, DFZM - Vitamina (Video Oficial). Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play sirena encantada"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Sirena Encantada, Miguel Morales, Video Letra - Sentir Vallenato. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Mimi",
+      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+    ],
+    [
+      "Mimi",
+      "Llevas rato en modo codigo. Como te sientes con el avance: fluido, trabado o cansado?"
     ]
+  ],
+  "interest_profile": [
+    {
+      "topic": "assistant config json",
+      "score": 25.0
+    },
+    {
+      "topic": "juegos los habia mas",
+      "score": 6.800000000000002
+    },
+    {
+      "topic": "youtube music",
+      "score": 3.06
+    },
+    {
+      "topic": "ventana desbordamiento bandeja del",
+      "score": 0.49999999999999956
+    },
+    {
+      "topic": "conmutaci\u00f3n tareas",
+      "score": 0.37999999999999945
+    }
+  ],
+  "background_knowledge": [
+    {
+      "topic": "youtube music",
+      "summary": "YouTube Music: YouTube Music is a music streaming service developed by the American video platform YouTube, a subsidiary of Google. The service is designed with an interface that allows users to simultaneously explore music audios and music videos from YouTube-based genres, playlists and recommendations. On December 1, 2020, YouTube Music replaced Google Play Music as Google's primary brand for music streaming. In Ap",
+      "timestamp": 1776888692
+    }
+  ],
+  "emotional_checkins": [
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776823557
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776887933
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776888046
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776888363
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776888651
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776889065
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776889407
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776889617
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776889945
+    },
+    {
+      "timestamp": 1776890201,
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk"
+    },
+    {
+      "timestamp": 1776890622,
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk"
+    },
+    {
+      "timestamp": 1776891147,
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk"
+    },
+    {
+      "timestamp": 1776891658,
+      "summary": "Check-in: Llevas rato en modo codigo. Como te sientes con el avance: fluido, trabado o cansado?",
+      "context": "assistant_config.json - AsistentePc - Visual Studio Code"
+    }
   ]
 }

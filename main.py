@@ -1,4 +1,5 @@
 import heapq
+import http.server
 import json
 import ctypes
 import os
@@ -10,6 +11,7 @@ import threading
 import time
 import tkinter as tk
 import math
+import urllib.parse
 from pathlib import Path
 from tkinter import messagebox, scrolledtext, simpledialog
 
@@ -247,12 +249,54 @@ class DesktopPet:
         self.music_queue = []
         self.music_session_active = False
         self.music_current_song = ""
+        self.music_backend = ""
+        self.music_player = None
+        self.music_vlc_instance = None
+        self.music_temp_file = ""
+        self.music_paused = False
+        self.last_music_error_detail = ""
+        self.music_track_started_at = 0.0
+        self.music_track_duration_seconds = 0.0
         self.music_controls_window = None
         self.music_controls_drag_offset = (0, 0)
+        self.music_mini_chat_window = None
+        self.music_mini_chat_label = None
+        self.music_mini_mode = "subtitle"
+        self.music_mini_mode_button = None
+        self.music_mini_command_frame = None
+        self.music_mini_entry = None
+        self.music_mini_send_button = None
+        self.music_subtitle_words = []
+        self.music_subtitle_index = 0
+        self.music_subtitle_job = None
+        self.music_monitor_job = None
+        self.music_monitor_ms = 1200
+        self.music_current_lyrics = ""
         self.screen_awareness_job = None
         self.screen_awareness_interval_ms = 5000
         self.last_active_window_title = ""
         self.last_context_message_at = 0.0
+        self.companion_mode_enabled = True
+        self.auto_open_chat_on_context = True
+        self.proactive_research_enabled = True
+        self.interest_profile = []
+        self.background_knowledge = []
+        self.emotional_checkins = []
+        self.last_auto_open_chat_at = 0.0
+        self.auto_open_chat_cooldown_seconds = 45
+        self.last_emotional_checkin_at = 0.0
+        self.emotional_checkin_cooldown_seconds = 420
+        self.last_background_research_at = 0.0
+        self.background_research_cooldown_seconds = 120
+        self.last_background_research_topic = ""
+        self.pending_background_research_topics = set()
+        self.browser_context_server_enabled = True
+        self.browser_context_port = 37655
+        self.latest_browser_context = {}
+        self.latest_browser_context_at = 0.0
+        self.browser_context_server = None
+        self.browser_context_server_thread = None
+        self.browser_context_lock = threading.Lock()
         if self.llm_provider not in self.llm_providers:
             self.llm_provider = "ollama"
         if self.llm_provider == "openai" and not self.llm_endpoint.startswith("https://"):
@@ -352,9 +396,106 @@ class DesktopPet:
         self.schedule_assistant_autonomy()
         self.schedule_needs_tick()
         self.schedule_auto_color_change()
+        self.start_browser_context_server()
         self.schedule_screen_awareness()
         if self.voice_realtime_enabled:
             self.start_realtime_listening()
+
+    def start_browser_context_server(self):
+        if not self.browser_context_server_enabled:
+            return
+        if self.browser_context_server is not None:
+            return
+
+        owner = self
+
+        class BrowserContextHandler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                parsed = urllib.parse.urlparse(self.path)
+                if parsed.path != "/context":
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+
+                content_length = int(self.headers.get("Content-Length", "0") or 0)
+                raw = self.rfile.read(max(0, content_length)).decode("utf-8", errors="ignore")
+                try:
+                    payload = json.loads(raw)
+                except Exception:
+                    payload = {}
+
+                title = str(payload.get("title", "")).strip()[:220]
+                url = str(payload.get("url", "")).strip()[:500]
+                browser = str(payload.get("browser", "brave")).strip()[:30] or "brave"
+                if title or url:
+                    with owner.browser_context_lock:
+                        owner.latest_browser_context = {
+                            "title": title,
+                            "url": url,
+                            "browser": browser,
+                            "timestamp": int(time.time()),
+                        }
+                        owner.latest_browser_context_at = time.time()
+
+                self.send_response(200)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"ok":true}')
+
+            def do_OPTIONS(self):
+                self.send_response(204)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type")
+                self.end_headers()
+
+            def log_message(self, _format, *_args):
+                return
+
+        class ThreadingHTTPServer(http.server.ThreadingHTTPServer):
+            daemon_threads = True
+
+        try:
+            server = ThreadingHTTPServer(("127.0.0.1", int(self.browser_context_port)), BrowserContextHandler)
+        except Exception as error:
+            print(f"[BrowserContext] No pude iniciar servidor local: {error}")
+            return
+
+        self.browser_context_server = server
+
+        def serve():
+            try:
+                server.serve_forever(poll_interval=0.4)
+            except Exception:
+                pass
+
+        self.browser_context_server_thread = threading.Thread(target=serve, daemon=True)
+        self.browser_context_server_thread.start()
+        print(f"[BrowserContext] Servidor activo en 127.0.0.1:{self.browser_context_port}")
+
+    def stop_browser_context_server(self):
+        server = self.browser_context_server
+        self.browser_context_server = None
+        if server is None:
+            return
+        try:
+            server.shutdown()
+        except Exception:
+            pass
+        try:
+            server.server_close()
+        except Exception:
+            pass
+
+    def get_recent_browser_context(self, freshness_seconds=15):
+        with self.browser_context_lock:
+            if not self.latest_browser_context:
+                return {}
+            age = time.time() - float(self.latest_browser_context_at or 0.0)
+            if age > float(freshness_seconds):
+                return {}
+            return dict(self.latest_browser_context)
 
     def discover_available_styles(self):
         return self.design_manager.discover_available_styles()
@@ -1467,6 +1608,289 @@ class DesktopPet:
         new_y = max(0, event.y_root - offset_y)
         self.music_controls_window.geometry(f"+{new_x}+{new_y}")
 
+    def _create_music_icon_button(self, parent, icon_name, command, bg_color="#1a4e84"):
+        canvas = tk.Canvas(parent, width=42, height=42, bg="#10253f", highlightthickness=0, bd=0)
+        circle = canvas.create_oval(3, 3, 39, 39, fill=bg_color, outline="#0b1f34", width=2)
+
+        if icon_name == "pause":
+            canvas.create_rectangle(15, 13, 19, 29, fill="white", outline="white")
+            canvas.create_rectangle(23, 13, 27, 29, fill="white", outline="white")
+        elif icon_name == "next":
+            canvas.create_polygon(14, 12, 24, 21, 14, 30, fill="white", outline="white")
+            canvas.create_polygon(22, 12, 32, 21, 22, 30, fill="white", outline="white")
+        elif icon_name == "exit":
+            canvas.create_line(15, 15, 27, 27, fill="white", width=3)
+            canvas.create_line(27, 15, 15, 27, fill="white", width=3)
+
+        def _on_enter(_event):
+            canvas.itemconfig(circle, fill="#2a6bab")
+
+        def _on_leave(_event):
+            canvas.itemconfig(circle, fill=bg_color)
+
+        canvas.bind("<Enter>", _on_enter)
+        canvas.bind("<Leave>", _on_leave)
+        canvas.bind("<Button-1>", lambda _event: command())
+        return canvas
+
+    def _music_mini_on_press(self, event):
+        self.music_controls_drag_offset = (event.x, event.y)
+
+    def _music_mini_on_drag(self, event):
+        if self.music_mini_chat_window is None or not self.music_mini_chat_window.winfo_exists():
+            return
+        offset_x, offset_y = self.music_controls_drag_offset
+        new_x = max(0, event.x_root - offset_x)
+        new_y = max(0, event.y_root - offset_y)
+        self.music_mini_chat_window.geometry(f"+{new_x}+{new_y}")
+
+    def toggle_music_mini_mode(self):
+        self.music_mini_mode = "command" if self.music_mini_mode == "subtitle" else "subtitle"
+        if self.music_mini_mode_button is not None and self.music_mini_mode_button.winfo_exists():
+            icon = "⌨" if self.music_mini_mode == "command" else "♪"
+            self.music_mini_mode_button.config(text=icon)
+        self.refresh_music_mini_layout()
+
+    def refresh_music_mini_layout(self):
+        if self.music_mini_chat_window is None or not self.music_mini_chat_window.winfo_exists():
+            return
+
+        if self.music_mini_mode == "command":
+            if self.music_mini_command_frame is not None and self.music_mini_command_frame.winfo_exists():
+                self.music_mini_command_frame.pack(side="left", fill="x", expand=True, padx=(2, 6), pady=3)
+            if self.music_mini_chat_label is not None and self.music_mini_chat_label.winfo_exists():
+                self.music_mini_chat_label.pack_forget()
+            self.music_mini_chat_window.geometry("420x44+" + self.music_mini_chat_window.geometry().split("+")[1] + "+" + self.music_mini_chat_window.geometry().split("+")[2])
+            if self.music_mini_entry is not None and self.music_mini_entry.winfo_exists():
+                self.music_mini_entry.focus_set()
+            return
+
+        if self.music_mini_command_frame is not None and self.music_mini_command_frame.winfo_exists():
+            self.music_mini_command_frame.pack_forget()
+        if self.music_mini_chat_label is not None and self.music_mini_chat_label.winfo_exists():
+            self.music_mini_chat_label.pack(side="left", fill="x", expand=True)
+        self.music_mini_chat_window.geometry("340x40+" + self.music_mini_chat_window.geometry().split("+")[1] + "+" + self.music_mini_chat_window.geometry().split("+")[2])
+
+    def _music_mini_submit_command(self, _event=None):
+        if self.music_mini_entry is None or not self.music_mini_entry.winfo_exists():
+            return "break"
+        raw = self.music_mini_entry.get().strip()
+        if not raw:
+            return "break"
+        self.music_mini_entry.delete(0, "end")
+
+        if not raw.startswith("!"):
+            raw = f"!{raw}"
+
+        self.show_music_mini_chat(f"Cmd: {raw}")
+
+        def worker(command_text):
+            try:
+                answer = self.handle_voice_or_text_command(command_text)
+            except Exception as error:
+                answer = f"Error comando musical: {error}"
+            self.ui_queue.put(("music_mini_feedback", str(answer or "Listo.")))
+
+        threading.Thread(target=worker, args=(raw,), daemon=True).start()
+        return "break"
+
+    def _build_subtitle_chunks(self, text, chunk_words=6):
+        raw = " ".join(str(text or "").split()).strip()
+        if not raw:
+            return []
+        words = raw.split(" ")
+        chunks = []
+        step = max(3, int(chunk_words))
+        for index in range(0, len(words), step):
+            chunks.append(" ".join(words[index : index + step]))
+        return chunks
+
+    def schedule_music_subtitles(self):
+        if self.music_subtitle_job is not None:
+            self.root.after_cancel(self.music_subtitle_job)
+            self.music_subtitle_job = None
+
+        if not self.music_session_active:
+            return
+        if self.music_mini_mode != "subtitle":
+            self.music_subtitle_job = self.root.after(1200, self.schedule_music_subtitles)
+            return
+
+        if self.music_mini_chat_label is not None and self.music_mini_chat_label.winfo_exists():
+            if self.music_subtitle_words:
+                line = self.music_subtitle_words[self.music_subtitle_index % len(self.music_subtitle_words)]
+                self.music_mini_chat_label.config(text=line[:95])
+                self.music_subtitle_index += 1
+            else:
+                self.music_mini_chat_label.config(text=f"Sonando: {self.music_current_song}"[:95])
+
+        self.music_subtitle_job = self.root.after(1700, self.schedule_music_subtitles)
+
+    def _music_backend_is_playing(self):
+        backend = str(getattr(self, "music_backend", "")).strip().lower()
+
+        if backend == "pygame":
+            try:
+                pygame = __import__("pygame")
+                if not pygame.mixer.get_init():
+                    return False
+                return bool(pygame.mixer.music.get_busy())
+            except Exception:
+                return False
+
+        if backend == "winsound":
+            duration = float(getattr(self, "music_track_duration_seconds", 0.0) or 0.0)
+            started_at = float(getattr(self, "music_track_started_at", 0.0) or 0.0)
+            if duration <= 0.0 or started_at <= 0.0:
+                return False
+            return (time.time() - started_at) < (duration + 0.35)
+
+        if backend == "vlc":
+            player = getattr(self, "music_player", None)
+            if player is None:
+                return False
+            try:
+                state = str(player.get_state())
+                return state not in {"State.Ended", "State.Stopped", "State.Error", "Ended", "Stopped", "Error"}
+            except Exception:
+                return False
+
+        return False
+
+    def schedule_music_monitor(self):
+        if self.is_destroying:
+            return
+
+        if self.music_monitor_job is not None:
+            self.root.after_cancel(self.music_monitor_job)
+            self.music_monitor_job = None
+
+        self.music_monitor_job = self.root.after(self.music_monitor_ms, self.run_music_monitor_tick)
+
+    def run_music_monitor_tick(self):
+        if self.is_destroying:
+            return
+
+        self.music_monitor_job = None
+        if self.music_session_active:
+            queue = list(getattr(self, "music_queue", []))
+            is_playing = self._music_backend_is_playing()
+            if queue and not is_playing:
+                self.play_next_from_queue()
+            elif not queue and not is_playing and not self.music_paused:
+                self.deactivate_music_session()
+
+        self.schedule_music_monitor()
+
+    def update_music_mini_feedback(self, message):
+        feedback = str(message or "Listo").strip()
+        if not feedback:
+            return
+        self.show_music_mini_chat(feedback[:90])
+        self.append_chat_message("Mimi", feedback[:200])
+
+    def show_music_mini_chat(self, message=""):
+        if self.music_mini_chat_window is not None and self.music_mini_chat_window.winfo_exists():
+            if self.music_mini_chat_label is not None and message:
+                self.music_mini_chat_label.config(text=message[:90])
+            self.music_mini_chat_window.deiconify()
+            self.music_mini_chat_window.lift()
+            return
+
+        self.music_mini_chat_window = tk.Toplevel(self.root)
+        self.music_mini_chat_window.overrideredirect(True)
+        self.music_mini_chat_window.attributes("-topmost", True)
+        self.music_mini_chat_window.configure(bg="#0b2440", highlightthickness=2, highlightbackground="#07172a")
+
+        container = tk.Frame(self.music_mini_chat_window, bg="#123b6b")
+        container.pack(fill="both", expand=True)
+        container.bind("<ButtonPress-1>", self._music_mini_on_press)
+        container.bind("<B1-Motion>", self._music_mini_on_drag)
+
+        badge = tk.Label(
+            container,
+            text="Mimi ♪",
+            bg="#123b6b",
+            fg="white",
+            font=("Segoe UI", 9, "bold"),
+            padx=8,
+            pady=3,
+        )
+        badge.pack(side="left")
+        badge.bind("<ButtonPress-1>", self._music_mini_on_press)
+        badge.bind("<B1-Motion>", self._music_mini_on_drag)
+
+        self.music_mini_mode_button = tk.Button(
+            container,
+            text="♪",
+            command=self.toggle_music_mini_mode,
+            bg="#123b6b",
+            fg="white",
+            activebackground="#0e2d51",
+            activeforeground="white",
+            relief="flat",
+            borderwidth=0,
+            padx=6,
+            pady=0,
+            font=("Segoe UI", 9, "bold"),
+        )
+        self.music_mini_mode_button.pack(side="left")
+        self.music_mini_mode_button.bind("<ButtonPress-1>", self._music_mini_on_press)
+        self.music_mini_mode_button.bind("<B1-Motion>", self._music_mini_on_drag)
+
+        self.music_mini_chat_label = tk.Label(
+            container,
+            text=message[:90] if message else "Reproduciendo musica",
+            bg="#123b6b",
+            fg="#d6e9ff",
+            font=("Segoe UI", 8),
+            anchor="w",
+            padx=6,
+            pady=3,
+        )
+        self.music_mini_chat_label.pack(side="left", fill="x", expand=True)
+        self.music_mini_chat_label.bind("<ButtonPress-1>", self._music_mini_on_press)
+        self.music_mini_chat_label.bind("<B1-Motion>", self._music_mini_on_drag)
+
+        self.music_mini_command_frame = tk.Frame(container, bg="#123b6b")
+        self.music_mini_entry = tk.Entry(
+            self.music_mini_command_frame,
+            font=("Segoe UI", 8),
+            bg="#1d4f87",
+            fg="white",
+            insertbackground="white",
+            relief="flat",
+        )
+        self.music_mini_entry.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        self.music_mini_entry.bind("<Return>", self._music_mini_submit_command)
+
+        self.music_mini_send_button = tk.Button(
+            self.music_mini_command_frame,
+            text=">",
+            command=self._music_mini_submit_command,
+            bg="#0e2d51",
+            fg="white",
+            activebackground="#07172a",
+            activeforeground="white",
+            relief="flat",
+            borderwidth=0,
+            padx=8,
+        )
+        self.music_mini_send_button.pack(side="left")
+
+        bubble_x = min(self.root.winfo_screenwidth() - 360, max(10, self.x + 90))
+        bubble_y = min(self.root.winfo_screenheight() - 90, max(10, self.y + 120))
+        self.music_mini_chat_window.geometry(f"340x40+{bubble_x}+{bubble_y}")
+        self.refresh_music_mini_layout()
+
+    def hide_music_mini_chat(self):
+        if self.music_mini_chat_window is None:
+            return
+        try:
+            self.music_mini_chat_window.withdraw()
+        except Exception:
+            pass
+
     def show_music_controls(self):
         if self.music_controls_window is not None and self.music_controls_window.winfo_exists():
             self.music_controls_window.deiconify()
@@ -1499,42 +1923,33 @@ class DesktopPet:
         controls = tk.Frame(frame, bg="#10253f")
         controls.pack(fill="x", padx=8, pady=(2, 8))
 
-        pause_btn = tk.Button(
+        pause_btn = self._create_music_icon_button(
             controls,
-            text="Pausa",
-            command=lambda: self.control_media_key("play_pause", auto=True),
-            bg="#1a4e84",
-            fg="white",
-            relief="flat",
-            padx=10,
+            icon_name="pause",
+            command=lambda: self.action_manager.toggle_music_pause(),
+            bg_color="#1a4e84",
         )
         pause_btn.pack(side="left")
 
-        next_btn = tk.Button(
+        next_btn = self._create_music_icon_button(
             controls,
-            text="Siguiente",
+            icon_name="next",
             command=self.play_next_from_queue,
-            bg="#1a4e84",
-            fg="white",
-            relief="flat",
-            padx=10,
+            bg_color="#1a4e84",
         )
-        next_btn.pack(side="left", padx=(6, 0))
+        next_btn.pack(side="left", padx=(8, 0))
 
-        exit_btn = tk.Button(
+        exit_btn = self._create_music_icon_button(
             controls,
-            text="Salir",
+            icon_name="exit",
             command=self.exit_music_session,
-            bg="#7a1d1d",
-            fg="white",
-            relief="flat",
-            padx=10,
+            bg_color="#7a1d1d",
         )
-        exit_btn.pack(side="left", padx=(6, 0))
+        exit_btn.pack(side="left", padx=(8, 0))
 
-        panel_x = min(self.root.winfo_screenwidth() - 220, max(10, self.x + 90))
-        panel_y = min(self.root.winfo_screenheight() - 120, max(10, self.y + 20))
-        self.music_controls_window.geometry(f"210x92+{panel_x}+{panel_y}")
+        panel_x = min(self.root.winfo_screenwidth() - 210, max(10, self.x + 90))
+        panel_y = min(self.root.winfo_screenheight() - 112, max(10, self.y + 20))
+        self.music_controls_window.geometry(f"200x92+{panel_x}+{panel_y}")
 
     def hide_music_controls(self):
         if self.music_controls_window is None:
@@ -1544,22 +1959,41 @@ class DesktopPet:
         except Exception:
             pass
 
-    def activate_music_session(self, song_query):
+    def activate_music_session(self, song_query, lyrics_preview=""):
         self.music_session_active = True
         self.music_current_song = str(song_query or "").strip()[:120]
+        self.music_current_lyrics = str(lyrics_preview or "").strip()[:500]
+        self.music_subtitle_words = self._build_subtitle_chunks(self.music_current_lyrics, chunk_words=6)
+        self.music_subtitle_index = 0
+        self.music_mini_mode = "subtitle"
         self.show_music_controls()
+        self.show_music_mini_chat(f"Sonando: {self.music_current_song}")
+        self.schedule_music_subtitles()
+        self.schedule_music_monitor()
         self.set_listening()
         self.save_assistant_config()
 
     def deactivate_music_session(self):
         self.music_session_active = False
         self.music_current_song = ""
+        self.music_current_lyrics = ""
+        self.music_subtitle_words = []
+        self.music_subtitle_index = 0
+        if self.music_subtitle_job is not None:
+            self.root.after_cancel(self.music_subtitle_job)
+            self.music_subtitle_job = None
+        if self.music_monitor_job is not None:
+            self.root.after_cancel(self.music_monitor_job)
+            self.music_monitor_job = None
         self.hide_music_controls()
+        self.hide_music_mini_chat()
         self.set_walking()
 
     def play_next_from_queue(self):
         ok, message = self.action_manager.play_next_queued_song()
         self.set_chat_status(message)
+        if ok:
+            self.show_music_mini_chat(message)
         if ok:
             self.append_chat_message("Mimi", message)
         else:
@@ -1577,7 +2011,19 @@ class DesktopPet:
         self.screen_awareness_job = self.root.after(self.screen_awareness_interval_ms, self.schedule_screen_awareness)
 
     def run_screen_awareness_tick(self):
-        title = self.action_manager.get_active_window_title()
+        context_source = "window"
+        browser_context = self.get_recent_browser_context(freshness_seconds=18)
+        if browser_context:
+            title = str(browser_context.get("title", "")).strip()
+            url = str(browser_context.get("url", "")).strip()
+            if url and title:
+                title = f"{title} | {url}"
+            elif url:
+                title = url
+            context_source = str(browser_context.get("browser", "brave")).strip() or "browser"
+        else:
+            title = self.action_manager.get_active_window_title()
+
         if not title:
             return
 
@@ -1585,13 +2031,81 @@ class DesktopPet:
             return
         self.last_active_window_title = title
 
+        topic = self.action_manager.update_interest_profile_from_window(title)
+        if topic:
+            self.save_assistant_config()
+            self.queue_background_topic_research(topic)
+
         message = self.action_manager.build_window_personalized_message(title)
+        if context_source == "brave":
+            message = f"[Brave] {message}"
         self.set_chat_status(message)
 
         now = time.time()
         if now - self.last_context_message_at >= 18:
+            self.maybe_auto_open_chat_bubble(now)
             self.append_chat_message("Mimi", message)
             self.last_context_message_at = now
+
+        if self.companion_mode_enabled and now - self.last_emotional_checkin_at >= self.emotional_checkin_cooldown_seconds:
+            checkin_message = self.action_manager.build_emotional_checkin_message(title)
+            if checkin_message:
+                self.maybe_auto_open_chat_bubble(now)
+                self.append_chat_message("Mimi", checkin_message)
+                self.record_emotional_checkin(f"Check-in: {checkin_message}", title)
+                self.last_emotional_checkin_at = now
+
+    def maybe_auto_open_chat_bubble(self, now=None):
+        if not self.auto_open_chat_on_context:
+            return
+        if self.chat_window is not None and self.chat_window.winfo_exists():
+            return
+        now = time.time() if now is None else float(now)
+        if now - self.last_auto_open_chat_at < self.auto_open_chat_cooldown_seconds:
+            return
+        self.open_chat_bubble()
+        self.last_auto_open_chat_at = now
+
+    def record_emotional_checkin(self, summary, context):
+        note = {
+            "timestamp": int(time.time()),
+            "summary": str(summary or "").strip()[:180],
+            "context": str(context or "").strip()[:100],
+        }
+        if not note["summary"]:
+            return
+        self.emotional_checkins.append(note)
+        self.emotional_checkins = self.emotional_checkins[-30:]
+        self.save_assistant_config()
+
+    def queue_background_topic_research(self, topic):
+        if not self.proactive_research_enabled:
+            return
+
+        cleaned_topic = str(topic or "").strip()[:70]
+        if not cleaned_topic:
+            return
+
+        now = time.time()
+        if now - self.last_background_research_at < self.background_research_cooldown_seconds:
+            return
+        if cleaned_topic.lower() == self.last_background_research_topic.lower():
+            return
+        if cleaned_topic.lower() in self.pending_background_research_topics:
+            return
+
+        self.pending_background_research_topics.add(cleaned_topic.lower())
+
+        def worker():
+            summary = self.action_manager.fetch_topic_background_summary(cleaned_topic)
+            if summary:
+                self.action_manager.remember_background_knowledge(cleaned_topic, summary)
+                self.last_background_research_at = time.time()
+                self.last_background_research_topic = cleaned_topic
+                self.save_assistant_config()
+            self.pending_background_research_topics.discard(cleaned_topic.lower())
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def save_pet_state(self):
         return self.state_manager.save_pet_state()
@@ -2296,6 +2810,11 @@ class DesktopPet:
                 self.music_controls_window.destroy()
             except Exception:
                 pass
+        if self.music_mini_chat_window is not None:
+            try:
+                self.music_mini_chat_window.destroy()
+            except Exception:
+                pass
 
         explosion = tk.Toplevel(self.root)
         explosion.overrideredirect(True)
@@ -2367,6 +2886,18 @@ class DesktopPet:
                 self.music_controls_window.destroy()
             except Exception:
                 pass
+        if self.music_mini_chat_window is not None:
+            try:
+                self.music_mini_chat_window.destroy()
+            except Exception:
+                pass
+        if self.music_monitor_job is not None:
+            try:
+                self.root.after_cancel(self.music_monitor_job)
+            except Exception:
+                pass
+            self.music_monitor_job = None
+        self.stop_browser_context_server()
         self.save_assistant_config()
         self.root.destroy()
 

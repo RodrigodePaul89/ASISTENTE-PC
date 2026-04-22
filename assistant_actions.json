@@ -142,5 +142,293 @@
     "action": "open_app",
     "detail": "code->code",
     "status": "ok"
+  },
+  {
+    "timestamp": 1776169617,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776169627,
+    "action": "media_key",
+    "detail": "play_pause",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776169627,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776174319,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\camilo es gey",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776174341,
+    "action": "open_app",
+    "detail": "la wikipedia->la wikipedia",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1776174350,
+    "action": "open_app",
+    "detail": "whatsapp->whatsapp",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1776174374,
+    "action": "delete_item",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\la carpeta camilo es gey",
+    "status": "missing"
+  },
+  {
+    "timestamp": 1776174496,
+    "action": "open_website",
+    "detail": "https://youtube.com",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776823585,
+    "action": "music_play",
+    "detail": "hilito",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776823618,
+    "action": "music_play",
+    "detail": "hilito",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776823631,
+    "action": "music_play",
+    "detail": "hilito",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776887964,
+    "action": "music_play",
+    "detail": "hilito",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776888066,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776888089,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776888110,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776888374,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776888403,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776888687,
+    "action": "music_play",
+    "detail": "la noche mas linda",
+    "status": "ok-browser-fallback"
+  },
+  {
+    "timestamp": 1776888709,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776888727,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "ok-browser-fallback"
+  },
+  {
+    "timestamp": 1776888738,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776889079,
+    "action": "desktop_cleanup",
+    "detail": "moved=0",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776889112,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889131,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889428,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889445,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889463,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889635,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889654,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889689,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889708,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-backend"
+  },
+  {
+    "timestamp": 1776889967,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "error:no-source"
+  },
+  {
+    "timestamp": 1776889976,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "error:no-source"
+  },
+  {
+    "timestamp": 1776890222,
+    "action": "music_play",
+    "detail": "la noche mas linda del mundo",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890239,
+    "action": "music_queue",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890249,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890277,
+    "action": "music_play",
+    "detail": "the winner takes all",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890351,
+    "action": "music_queue",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890597,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890719,
+    "action": "music_play",
+    "detail": "sexytekk",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890748,
+    "action": "music_queue",
+    "detail": "te extra\u00f1o - xtreme",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890797,
+    "action": "music_queue",
+    "detail": "welcome to my crib",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890923,
+    "action": "music_play",
+    "detail": "te extra\u00f1o - xtreme",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890961,
+    "action": "music_play",
+    "detail": "con el viento a tu favor",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776890982,
+    "action": "music_play",
+    "detail": "welcome to my crib",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776891165,
+    "action": "music_play",
+    "detail": "con el viento a tu favor",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776891497,
+    "action": "music_play",
+    "detail": "vitamina",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776891626,
+    "action": "music_play",
+    "detail": "sirena encantada",
+    "status": "ok"
   }
 ]

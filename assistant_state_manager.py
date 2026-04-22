@@ -77,6 +77,29 @@ class PetStateManager:
         if automation_cfg is not None:
             self.pet.functional_automation_enabled = bool(automation_cfg)
 
+        companion_mode_cfg = data.get("companion_mode_enabled")
+        if companion_mode_cfg is not None:
+            self.pet.companion_mode_enabled = bool(companion_mode_cfg)
+
+        auto_open_chat_cfg = data.get("auto_open_chat_on_context")
+        if auto_open_chat_cfg is not None:
+            self.pet.auto_open_chat_on_context = bool(auto_open_chat_cfg)
+
+        proactive_research_cfg = data.get("proactive_research_enabled")
+        if proactive_research_cfg is not None:
+            self.pet.proactive_research_enabled = bool(proactive_research_cfg)
+
+        browser_context_enabled_cfg = data.get("browser_context_server_enabled")
+        if browser_context_enabled_cfg is not None:
+            self.pet.browser_context_server_enabled = bool(browser_context_enabled_cfg)
+
+        browser_context_port_cfg = data.get("browser_context_port")
+        if browser_context_port_cfg is not None:
+            try:
+                self.pet.browser_context_port = max(1024, min(65535, int(browser_context_port_cfg)))
+            except Exception:
+                pass
+
         pet_name_cfg = str(data.get("pet_name", self.pet.pet_name)).strip()
         if pet_name_cfg:
             self.pet.pet_name = pet_name_cfg[:40]
@@ -168,6 +191,56 @@ class PetStateManager:
             if cleaned_transcript:
                 self.pet.chat_transcript = cleaned_transcript[-120:]
 
+        interest_cfg = data.get("interest_profile", self.pet.interest_profile)
+        if isinstance(interest_cfg, list):
+            normalized_interests = []
+            for item in interest_cfg:
+                if not isinstance(item, dict):
+                    continue
+                topic = str(item.get("topic", "")).strip()[:60]
+                if not topic:
+                    continue
+                try:
+                    score = float(item.get("score", 0.0))
+                except Exception:
+                    score = 0.0
+                normalized_interests.append({"topic": topic, "score": max(0.0, min(25.0, score))})
+            self.pet.interest_profile = normalized_interests[-40:]
+
+        knowledge_cfg = data.get("background_knowledge", self.pet.background_knowledge)
+        if isinstance(knowledge_cfg, list):
+            normalized_knowledge = []
+            for item in knowledge_cfg:
+                if not isinstance(item, dict):
+                    continue
+                topic = str(item.get("topic", "")).strip()[:70]
+                summary = str(item.get("summary", "")).strip()[:420]
+                if not topic or not summary:
+                    continue
+                try:
+                    timestamp = int(item.get("timestamp", int(time.time())))
+                except Exception:
+                    timestamp = int(time.time())
+                normalized_knowledge.append({"topic": topic, "summary": summary, "timestamp": timestamp})
+            self.pet.background_knowledge = normalized_knowledge[-40:]
+
+        checkins_cfg = data.get("emotional_checkins", self.pet.emotional_checkins)
+        if isinstance(checkins_cfg, list):
+            normalized_checkins = []
+            for item in checkins_cfg:
+                if not isinstance(item, dict):
+                    continue
+                summary = str(item.get("summary", "")).strip()[:180]
+                context = str(item.get("context", "")).strip()[:100]
+                if not summary:
+                    continue
+                try:
+                    timestamp = int(item.get("timestamp", int(time.time())))
+                except Exception:
+                    timestamp = int(time.time())
+                normalized_checkins.append({"summary": summary, "context": context, "timestamp": timestamp})
+            self.pet.emotional_checkins = normalized_checkins[-30:]
+
     def save_assistant_config(self):
         payload = {
             "wake_word": self.pet.voice_wake_word,
@@ -183,6 +256,11 @@ class PetStateManager:
             "llm_endpoint": self.pet.llm_endpoint,
             "llm_offline_only": self.pet.llm_offline_only,
             "functional_automation_enabled": self.pet.functional_automation_enabled,
+            "companion_mode_enabled": self.pet.companion_mode_enabled,
+            "auto_open_chat_on_context": self.pet.auto_open_chat_on_context,
+            "proactive_research_enabled": self.pet.proactive_research_enabled,
+            "browser_context_server_enabled": self.pet.browser_context_server_enabled,
+            "browser_context_port": self.pet.browser_context_port,
             "pet_name": self.pet.pet_name,
             "user_name_memory": self.pet.user_name_memory,
             "pet_memory_notes": self.pet.pet_memory_notes[-20:],
@@ -192,6 +270,9 @@ class PetStateManager:
             "music_session_active": self.pet.music_session_active,
             "music_current_song": self.pet.music_current_song,
             "chat_transcript": self.pet.chat_transcript[-120:],
+            "interest_profile": self.pet.interest_profile[-40:],
+            "background_knowledge": self.pet.background_knowledge[-40:],
+            "emotional_checkins": self.pet.emotional_checkins[-30:],
         }
         self.pet.config_store.save(self.pet.assistant_config_file, payload)
 
