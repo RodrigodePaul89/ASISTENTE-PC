@@ -4,9 +4,23 @@ import threading
 import time
 import tkinter as tk
 import math
+import os
 from pathlib import Path
 
 from PIL import Image, ImageSequence, ImageTk
+from assistant_alias_manager import AliasManager
+from assistant_config_store import JsonConfigStore
+from assistant_chat_controller import ChatUIController
+from assistant_command_handler import AssistantCommandHandler
+from assistant_design_manager import PetDesignManager
+from assistant_actions_manager import SystemActionManager
+from assistant_identity_manager import PetIdentityManager
+from assistant_llm_gateway import LLMGateway
+from assistant_permissions import PermissionManager
+from assistant_state_manager import PetStateManager
+from assistant_text_utils import CommandTextParser
+from assistant_ui_event_controller import UIEventController
+from assistant_voice_manager import VoiceManager
 
 try:
     import pyttsx3
@@ -53,6 +67,7 @@ class DesktopPet:
 
         self.hold_to_explode_seconds = 1.8
         self.asset_dir = Path(__file__).resolve().parent
+        self._init_assistant_core()
         self.available_styles = self.discover_available_styles()
         self.current_style = random.choice(self.available_styles)
         self.style_cycle_queue = []
@@ -74,6 +89,10 @@ class DesktopPet:
 
         # Variables animación
         self.frame_index = 0
+
+        # Widget principal
+        self.label = tk.Label(self.root, bg="white", borderwidth=0, highlightthickness=0)
+        self.label.pack()
 
         # Dirección movimiento
         self.direction_x = random.choice([-1, 1])
@@ -97,123 +116,351 @@ class DesktopPet:
         self.label.bind("<ButtonPress-1>", self.on_left_press)
         self.label.bind("<ButtonRelease-1>", self.on_left_release)
         self.label.bind("<B1-Motion>", self.on_left_drag)
+        self.label.bind("<Double-Button-1>", lambda _event: self.open_chat_bubble())
         self.label.bind("<Button-3>", self.show_menu)
 
         # -------- MENÚ --------
         self.menu = tk.Menu(self.root, tearoff=0)
         self.menu.add_command(label="🐸 Caminar", command=self.set_walking)
         self.menu.add_command(label="🛑 Detener", command=self.set_idle)
+        
         self.menu.add_command(label="⬆️ Saltar", command=self.trigger_jump)
         self.menu.add_command(label="💀 Morir (test)", command=self.trigger_dead)
-        self.menu.add_command(label="🎤 Escuchar", command=self.start_listening)
+        self.menu.add_separator()
+        self.menu.add_command(label="🎮 Modo Libre", command=self.set_mode_free)
         self.menu.add_separator()
         self.menu.add_command(label="❌ Salir", command=self.root.destroy)
 
         # Iniciar ciclos
+        self.menu.add_command(label="⏯️ Musica play/pausa", command=lambda: self.control_media_key("play_pause"))
+        self.menu.add_command(label="⏭️ Siguiente cancion", command=lambda: self.control_media_key("next"))
+        self.menu.add_command(label="⏮️ Cancion anterior", command=lambda: self.control_media_key("prev"))
+        self.menu.add_separator()
+        self.menu.add_command(label="🧪 Sandbox ON/OFF", command=self.toggle_sandbox)
+        self.menu.add_command(label="🔒 IA Local (solo Ollama)", command=self.activate_local_ai_mode)
+        self.menu.add_command(label="🌐 IA + Internet", command=self.activate_cloud_ai_mode)
+        self.menu.add_separator()
+        self.menu.add_command(label="❌ Salir", command=self.on_app_close)
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_app_close)
+
+        self.root.bind_all("<Left>", lambda _event: self.sandbox_nudge(-1))
+        self.root.bind_all("<Right>", lambda _event: self.sandbox_nudge(1))
+        self.root.bind_all("<Up>", lambda _event: self.sandbox_jump())
+
+        # Iniciar ciclos
+        self.load_assistant_config()
+        self.apply_personality(self.personality_name)
+        self.load_pet_state(quiet=True)
+        # Requisito del proyecto: arrancar siempre en modo suelo.
+        self.set_mode_platform()
+        self.stats["total_sessions"] += 1
         self.animate()
         self.move()
         self.process_ui_queue()
         self.schedule_auto_color_change()
+        if self.voice_realtime_enabled:
+            self.start_realtime_listening()
 
     def discover_available_styles(self):
-        img_root = self.asset_dir.parent / "img"
-        required = ["Idle.png", "Walk.png"]
-
-        discovered = []
-        if img_root.exists():
-            for entry in img_root.iterdir():
-                if not entry.is_dir():
-                    continue
-                if all((entry / req).exists() for req in required):
-                    discovered.append(entry.name)
-
-        if discovered:
-            preferred = ["Musketeer", "Knight", "Enchantress"]
-            preferred_found = [name for name in preferred if name in discovered]
-
-            if preferred_found:
-                print(f"[Mascota] Estilos detectados: {', '.join(preferred_found)}")
-                return preferred_found
-
-            discovered_sorted = sorted(discovered)
-            print(f"[Mascota] Estilos detectados: {', '.join(discovered_sorted)}")
-            return discovered_sorted
-
-        return ["Musketeer", "Knight", "Enchantress"]
+        return self.design_manager.discover_available_styles()
 
     def build_animation_sources_for_style(self, style_name):
-        style_base = (Path("..") / "img" / style_name).as_posix()
+        return self.design_manager.build_animation_sources_for_style(style_name)
 
-        return {
-            "walking": [
-                f"{style_base}/Walk.png",
-                f"{style_base}/walk.png",
-                f"{style_base}/Run.png",
-                "walk.gif",
-                "walking.gif",
-                "ranaa.gif",
-                "rana.gif",
-                "ranaaa.gif",
-            ],
-            "idle": [
-                f"{style_base}/Idle.png",
-                "idle.gif",
-                "breathing.gif",
-                "ranaaa.gif",
-                "ranaa.gif",
-            ],
-            "running": [
-                f"{style_base}/Run.png",
-                f"{style_base}/Walk.png",
-                f"{style_base}/walk.png",
-            ],
-            "jump": [
-                f"{style_base}/Jump.png",
-                f"{style_base}/Run.png",
-                f"{style_base}/Walk.png",
-            ],
-            "dead": [
-                f"{style_base}/Dead.png",
-                f"{style_base}/Hurt.png",
-                f"{style_base}/Idle.png",
-            ],
-            "listening": [
-                f"{style_base}/Attack_4.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Jump.png",
-                f"{style_base}/Hurt.png",
-                "listening.gif",
-                "listen.gif",
-                "rana.gif",
-                "ranaa.gif",
-            ],
-            "attack_1": [
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_4.png",
-            ],
-            "attack_2": [
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_4.png",
-            ],
-            "attack_3": [
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-                f"{style_base}/Attack_4.png",
-            ],
-            "attack_4": [
-                f"{style_base}/Attack_4.png",
-                f"{style_base}/Attack_3.png",
-                f"{style_base}/Attack_2.png",
-                f"{style_base}/Attack_1.png",
-            ],
+    def _init_assistant_core(self):
+        # Estado base para que los managers externos puedan operar sin fallar al inicio.
+        self.assistant_config_file = self.asset_dir / "assistant_config.json"
+        self.save_file = self.asset_dir / "assistant_state.json"
+        desktop_default = Path.home() / "Desktop"
+        onedrive_desktop = Path.home() / "OneDrive" / "Desktop"
+        self.desktop_path = onedrive_desktop if onedrive_desktop.exists() else desktop_default
+        self.archive_folder_name = "Archivado_Mimi"
+        self.action_log_file = self.asset_dir / "assistant_actions.json"
+        self.max_action_log_entries = 300
+        self.system_action_cooldown_seconds = 1.0
+        self.system_action_cooldown_until = 0.0
+        self.pending_action_timeout_seconds = 45
+
+        self.execution_mode = "platform"
+        self.sandbox_mode = False
+        self.permission_levels = ("query", "files", "full")
+        self.permission_level = "query"
+        self.llm_providers = ("ollama", "openai")
+        self.llm_provider = "ollama"
+        self.llm_enabled = True
+        self.llm_model = "llama3.2:3b"
+        self.llm_endpoint = "http://127.0.0.1:11434/api/chat"
+        self.llm_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        self.llm_offline_only = True
+        self.functional_automation_enabled = True
+        self.voice_wake_word = "mimi"
+        self.require_wake_word = False
+        self.voice_realtime_enabled = False
+        self.voice_response_enabled = False
+        self.voice_phrase_timeout_seconds = 2
+        self.voice_phrase_max_seconds = 5
+        self.pet_name = "Mimi"
+        self.personality_name = "amigable"
+        self.user_name_memory = ""
+        self.pet_memory_notes = []
+        self.chat_transcript = [("Mimi", "Lista para ayudarte.")]
+
+        self.chat_window = None
+        self.chat_header_label = None
+        self.chat_history = None
+        self.chat_entry = None
+        self.chat_status_label = None
+        self.chat_send_button = None
+        self.chat_autohide_job = None
+        self.chat_inactivity_ms = 120000
+        self.chat_request_in_flight = False
+        self.pending_action = None
+        self.free_mood = "feliz"
+        self.free_mood_interval_range = (8.0, 18.0)
+        self.next_free_mood_change_at = time.time() + random.uniform(*self.free_mood_interval_range)
+
+        self.needs = {"energia": 100, "hambre": 0, "higiene": 100, "diversion": 100}
+        self.stats = {
+            "total_sessions": 0,
+            "total_runtime_seconds": 0,
+            "loads": 0,
+            "saves": 0,
         }
+        self.session_started_at = time.time()
+        self.path_nodes = []
+        self.last_path_target = None
+
+        self.config_store = JsonConfigStore()
+        self.text_parser = CommandTextParser()
+        self.llm_gateway = LLMGateway()
+        self.design_manager = PetDesignManager(self)
+        self.identity_manager = PetIdentityManager(self)
+        self.permission_manager = PermissionManager(self)
+        self.action_manager = SystemActionManager(self)
+        self.alias_manager = AliasManager(self)
+        self.state_manager = PetStateManager(self)
+        self.chat_controller = ChatUIController(self)
+        self.command_handler = AssistantCommandHandler(self)
+        self.ui_event_controller = UIEventController(self)
+        self.voice_manager = VoiceManager(
+            self,
+            VOICE_AVAILABLE,
+            sr_module=sr if VOICE_AVAILABLE else None,
+            tts_module=pyttsx3 if VOICE_AVAILABLE else None,
+        )
+
+    def load_assistant_config(self):
+        return self.state_manager.load_assistant_config()
+
+    def save_assistant_config(self):
+        return self.state_manager.save_assistant_config()
+
+    def save_pet_state(self):
+        return self.state_manager.save_pet_state()
+
+    def load_pet_state(self, quiet=False):
+        return self.state_manager.load_pet_state(quiet=quiet)
+
+    def apply_personality(self, personality_name):
+        candidate = str(personality_name or "").strip().lower()
+        if not candidate:
+            candidate = "amigable"
+        self.personality_name = candidate[:40]
+        self.refresh_chat_header_mode()
+
+    def set_mode_platform(self):
+        self.execution_mode = "platform"
+
+    def set_mode_free(self):
+        self.execution_mode = "free"
+
+    def toggle_sandbox(self):
+        self.sandbox_mode = not self.sandbox_mode
+        state = "ON" if self.sandbox_mode else "OFF"
+        self.set_chat_status(f"Sandbox {state}")
+
+    def sandbox_nudge(self, direction):
+        if not self.sandbox_mode or self.is_destroying:
+            return
+        self.direction_x = 1 if int(direction) >= 0 else -1
+        self.x += int(15 * self.direction_x)
+        sprite_width, _ = self.get_walking_sprite_size()
+        screen_width = self.root.winfo_screenwidth()
+        self.x = max(0, min(screen_width - sprite_width, self.x))
+        self.root.geometry(f"+{self.x}+{self.y}")
+
+    def sandbox_jump(self):
+        if not self.sandbox_mode:
+            return
+        self.trigger_jump()
+
+    def control_media_key(self, action, auto=False):
+        self.action_manager.control_media_key(action, auto=auto)
+
+    def activate_local_ai_mode(self):
+        self.llm_provider = "ollama"
+        self.llm_offline_only = True
+        self.llm_endpoint = "http://127.0.0.1:11434/api/chat"
+        self.llm_enabled = True
+        self.save_assistant_config()
+        self.refresh_chat_header_mode()
+
+    def activate_cloud_ai_mode(self):
+        self.llm_provider = "openai"
+        self.llm_offline_only = False
+        self.llm_endpoint = "https://api.openai.com/v1/chat/completions"
+        self.llm_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        self.llm_enabled = bool(self.llm_api_key)
+        self.save_assistant_config()
+        self.refresh_chat_header_mode()
+
+    def has_permission(self, category):
+        return self.permission_manager.has_permission(category)
+
+    def set_permission_level(self, level):
+        return self.permission_manager.set_permission_level(level)
+
+    def sanitize_folder_name(self, raw_name):
+        return self.text_parser.sanitize_folder_name(raw_name)
+
+    def normalize_command_text(self, text):
+        return self.text_parser.normalize_command_text(text)
+
+    def extract_folder_name_from_command(self, command):
+        return self.text_parser.extract_folder_name_from_command(command)
+
+    def extract_json_object(self, raw_text):
+        return self.text_parser.extract_json_object(raw_text)
+
+    def is_allowed_path(self, target_path):
+        try:
+            candidate = Path(target_path).resolve()
+        except Exception:
+            return False
+
+        safe_roots = [
+            self.desktop_path.resolve(),
+            self.asset_dir.resolve(),
+            (Path.home() / "Documents" / "MimiAsistente").resolve(),
+        ]
+        return any(candidate == root or root in candidate.parents for root in safe_roots)
+
+    def format_pet_memory(self):
+        return self.identity_manager.format_pet_memory()
+
+    def get_chat_header_text(self):
+        mode = "Local" if self.llm_provider == "ollama" else "Nube"
+        return f"{self.pet_name} [{mode}]"
+
+    def refresh_chat_header_mode(self):
+        if self.chat_header_label is None or not self.chat_header_label.winfo_exists():
+            return
+        self.chat_header_label.config(text=self.get_chat_header_text())
+
+    def open_chat_bubble(self):
+        self.chat_controller.open_chat_bubble()
+
+    def close_chat_bubble(self):
+        self.chat_controller.close_chat_bubble()
+
+    def append_chat_message(self, speaker, text):
+        self.chat_controller.append_chat_message(speaker, text)
+
+    def set_chat_status(self, text):
+        self.chat_controller.set_chat_status(text)
+
+    def submit_chat_message(self, _event=None):
+        if self.chat_entry is None or not self.chat_entry.winfo_exists():
+            return "break"
+
+        user_text = self.chat_entry.get().strip()
+        self.chat_entry.delete(0, "end")
+        if not user_text:
+            return "break"
+
+        self.append_chat_message("Tu", user_text)
+        response = self.handle_voice_or_text_command(user_text)
+        if response:
+            self.append_chat_message("Mimi", response)
+            if self.voice_response_enabled:
+                self._speak(response)
+        return "break"
+
+    def handle_voice_or_text_command(self, text):
+        try:
+            return self.command_handler.handle(text)
+        except Exception as error:
+            print(f"[Comando] Error: {error}")
+            return "No pude procesar ese comando en este momento."
+
+    def strip_wake_word(self, text):
+        normalized = str(text or "").strip().lower()
+        wake = str(self.voice_wake_word or "").strip().lower()
+        if not normalized:
+            return ""
+        if not wake:
+            return normalized
+        if normalized.startswith(wake):
+            return normalized[len(wake) :].strip(" ,:;.-")
+        return ""
+
+    def query_ollama_local_with_system(self, system_prompt, user_prompt, timeout_seconds=20):
+        return self.llm_gateway.query_ollama_local_chat(
+            self.llm_model,
+            str(system_prompt or ""),
+            str(user_prompt or ""),
+            timeout_seconds,
+        )
+
+    def query_ollama_llm(self, user_prompt, timeout_seconds=20):
+        system_prompt = self.identity_manager.build_pet_identity_system_prompt()
+        return self.query_ollama_local_with_system(system_prompt, user_prompt, timeout_seconds=timeout_seconds)
+
+    def query_optional_llm(self, user_prompt, timeout_seconds=20):
+        if not self.llm_enabled:
+            return ""
+
+        system_prompt = self.identity_manager.build_pet_identity_system_prompt()
+        prompt = str(user_prompt or "").strip()
+        if not prompt:
+            return ""
+
+        if self.llm_provider == "openai" and not self.llm_offline_only and self.llm_api_key:
+            return self.llm_gateway.query_openai_chat(
+                endpoint=self.llm_endpoint,
+                api_key=self.llm_api_key,
+                model=self.llm_model,
+                system_prompt=system_prompt,
+                user_prompt=prompt,
+                timeout_seconds=timeout_seconds,
+            )
+
+        return self.llm_gateway.query_ollama_chat(
+            endpoint=self.llm_endpoint,
+            model=self.llm_model,
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def check_ollama_health(self):
+        return self.llm_gateway.check_ollama_health(self.llm_endpoint, timeout_seconds=6)
+
+    def clamp_need(self, value):
+        return max(0, min(100, int(value)))
+
+    def clear_blocks(self):
+        return None
+
+    def update_hud(self):
+        return None
+
+    def face_user(self):
+        pointer_x, _pointer_y = self.root.winfo_pointerxy()
+        sprite_width, _sprite_height = self.get_walking_sprite_size()
+        center_x = self.x + sprite_width // 2
+        self.direction_x = 1 if pointer_x >= center_x else -1
 
     def schedule_auto_color_change(self):
         if self.is_destroying:
@@ -233,16 +480,7 @@ class DesktopPet:
         self.schedule_auto_color_change()
 
     def choose_next_style(self):
-        if len(self.available_styles) <= 1:
-            return self.current_style
-
-        if not self.style_cycle_queue:
-            self.style_cycle_queue = [
-                style for style in self.available_styles if style != self.current_style
-            ]
-            random.shuffle(self.style_cycle_queue)
-
-        return self.style_cycle_queue.pop(0)
+        return self.design_manager.choose_next_style()
 
     def switch_style(self, style_name):
         previous_sources = self.animation_sources
@@ -485,10 +723,8 @@ class DesktopPet:
             self.move_walking()
 
         elif self.state == "listening":
-            # Pequeña vibración
-            self.root.geometry(
-                f"+{self.x + random.randint(-3,3)}+{self.y + random.randint(-3,3)}"
-            )
+            self.face_user()
+            self.root.geometry(f"+{self.x}+{self.y}")
 
         elif self.state == "idle":
             self.hunt_flies_idle()
@@ -659,6 +895,8 @@ class DesktopPet:
 
     def set_listening(self):
         self.state = "listening"
+        self.is_running = False
+        self.face_user()
 
     def toggle_state_cycle(self):
         if self.state == "walking":
@@ -797,20 +1035,18 @@ class DesktopPet:
 
     # ---------------- VOZ ----------------
     def start_listening(self):
-        self.set_listening()
+        self.voice_manager.start_listening()
 
-        if not VOICE_AVAILABLE:
-            if not self.voice_warning_shown:
-                print("[Aviso] speech_recognition/pyttsx3 no disponibles en el entorno.")
-                self.voice_warning_shown = True
-            self.root.after(1200, self.set_walking)
-            return
+    def start_realtime_listening(self):
+        ok = self.voice_manager.start_continuous_listening()
+        if ok:
+            self.set_chat_status("Voz continua activada.")
+        else:
+            self.set_chat_status("No pude activar voz continua en este entorno.")
 
-        if self.listening_thread and self.listening_thread.is_alive():
-            return
-
-        self.listening_thread = threading.Thread(target=self._listen_worker, daemon=True)
-        self.listening_thread.start()
+    def stop_realtime_listening(self):
+        self.voice_manager.stop_continuous_listening()
+        self.set_chat_status("Voz continua desactivada.")
 
     def _listen_worker(self):
         recognizer = sr.Recognizer()
@@ -831,30 +1067,18 @@ class DesktopPet:
             self.ui_queue.put(("set_state", "walking"))
 
     def _speak(self, text):
-        if not VOICE_AVAILABLE:
-            return
-        try:
-            engine = pyttsx3.init()
-            engine.setProperty("rate", 180)
-            engine.say(text)
-            engine.runAndWait()
-        except Exception as error:
-            print(f"[Voz] {error}")
+        self.voice_manager.speak(text)
 
-    def process_ui_queue(self):
+    def on_app_close(self):
         if self.is_destroying:
             return
+        self.is_destroying = True
+        self.voice_manager.stop_continuous_listening()
+        self.save_assistant_config()
+        self.root.destroy()
 
-        while True:
-            try:
-                action, payload = self.ui_queue.get_nowait()
-            except queue.Empty:
-                break
-
-            if action == "set_state":
-                self.state = payload
-
-        self.root.after(120, self.process_ui_queue)
+    def process_ui_queue(self):
+        self.ui_event_controller.process_ui_queue()
 
 if __name__ == "__main__":
     root = tk.Tk()

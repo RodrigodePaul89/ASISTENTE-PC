@@ -1,0 +1,194 @@
+{
+  "apps": [
+    {
+      "name": "chrome",
+      "aliases": ["google chrome", "navegador chrome"],
+      "targets": ["chrome"]
+    },
+    {
+      "name": "edge",
+      "aliases": ["ms edge", "microsoft edge", "navegador edge"],
+      "targets": ["msedge"]
+    },
+    {
+      "name": "firefox",
+      "aliases": ["mozilla", "navegador firefox"],
+      "targets": ["firefox"]
+    },
+    {
+      "name": "brave",
+      "aliases": ["navegador brave"],
+      "targets": ["brave"]
+    },
+    {
+      "name": "opera",
+      "aliases": ["opera gx"],
+      "targets": ["opera", "opera.exe"]
+    },
+    {
+      "name": "explorador",
+      "aliases": ["explorer", "file explorer"],
+      "targets": ["explorer"]
+    },
+    {
+      "name": "vscode",
+      "aliases": ["code", "visual studio code", "vs code"],
+      "targets": ["code"]
+    },
+    {
+      "name": "notepad",
+      "aliases": ["bloc de notas", "editor de texto"],
+      "targets": ["notepad"]
+    },
+    {
+      "name": "paint",
+      "aliases": ["mspaint"],
+      "targets": ["mspaint"]
+    },
+    {
+      "name": "calculadora",
+      "aliases": ["calc", "calculator"],
+      "targets": ["calc"]
+    },
+    {
+      "name": "cmd",
+      "aliases": ["simbolo del sistema", "command prompt"],
+      "targets": ["cmd"]
+    },
+    {
+      "name": "powershell",
+      "aliases": ["pwsh", "terminal powershell"],
+      "targets": ["powershell", "pwsh"]
+    },
+    {
+      "name": "terminal",
+      "aliases": ["windows terminal", "wt"],
+      "targets": ["wt", "powershell"]
+    },
+    {
+      "name": "task manager",
+      "aliases": ["administrador de tareas", "taskmgr"],
+      "targets": ["taskmgr"]
+    },
+    {
+      "name": "snipping tool",
+      "aliases": ["recortes", "captura recortes"],
+      "targets": ["snippingtool", "SnippingTool.exe"]
+    },
+    {
+      "name": "word",
+      "aliases": ["microsoft word", "winword"],
+      "targets": ["winword"]
+    },
+    {
+      "name": "excel",
+      "aliases": ["microsoft excel"],
+      "targets": ["excel"]
+    },
+    {
+      "name": "powerpoint",
+      "aliases": ["ppt", "microsoft powerpoint"],
+      "targets": ["powerpnt"]
+    },
+    {
+      "name": "outlook",
+      "aliases": ["correo outlook", "microsoft outlook"],
+      "targets": ["outlook"]
+    },
+    {
+      "name": "onenote",
+      "aliases": ["one note"],
+      "targets": ["onenote"]
+    },
+    {
+      "name": "teams",
+      "aliases": ["microsoft teams"],
+      "targets": ["teams", "ms-teams"]
+    },
+    {
+      "name": "discord",
+      "aliases": ["disc"],
+      "targets": ["discord", "%LOCALAPPDATA%\\Discord\\Update.exe --processStart Discord.exe"]
+    },
+    {
+      "name": "telegram",
+      "aliases": ["tg"],
+      "targets": ["telegram", "%APPDATA%\\Telegram Desktop\\Telegram.exe"]
+    },
+    {
+      "name": "whatsapp",
+      "aliases": ["wasa", "wsp", "whats"],
+      "targets": ["%LOCALAPPDATA%\\WhatsApp\\WhatsApp.exe", "%LOCALAPPDATA%\\Programs\\WhatsApp\\WhatsApp.exe", "whatsapp"]
+    },
+    {
+      "name": "spotify",
+      "aliases": ["music spotify"],
+      "targets": ["spotify", "%APPDATA%\\Spotify\\Spotify.exe"]
+    },
+    {
+      "name": "steam",
+      "aliases": ["juegos steam"],
+      "targets": ["steam"]
+    },
+    {
+      "name": "epic",
+      "aliases": ["epic games", "epic launcher"],
+      "targets": ["EpicGamesLauncher.exe"]
+    },
+    {
+      "name": "riot",
+      "aliases": ["riot client", "valorant"],
+      "targets": ["RiotClientServices.exe"]
+    },
+    {
+      "name": "obs",
+      "aliases": ["obs studio"],
+      "targets": ["obs64", "obs32", "obs"]
+    },
+    {
+      "name": "vlc",
+      "aliases": ["video lan"],
+      "targets": ["vlc"]
+    },
+    {
+      "name": "photoshop",
+      "aliases": ["adobe photoshop", "ps"],
+      "targets": ["photoshop.exe"]
+    },
+    {
+      "name": "illustrator",
+      "aliases": ["adobe illustrator", "ai"],
+      "targets": ["illustrator.exe"]
+    },
+    {
+      "name": "premiere",
+      "aliases": ["adobe premiere", "premiere pro"],
+      "targets": ["adobe premiere pro.exe", "premiere.exe"]
+    },
+    {
+      "name": "figma",
+      "aliases": ["figma desktop"],
+      "targets": ["figma", "Figma.exe"]
+    },
+    {
+      "name": "notion",
+      "aliases": ["notion app"],
+      "targets": ["notion", "Notion.exe"]
+    },
+    {
+      "name": "postman",
+      "aliases": ["api postman"],
+      "targets": ["postman", "Postman.exe"]
+    },
+    {
+      "name": "github desktop",
+      "aliases": ["github", "gh desktop"],
+      "targets": ["github", "GitHubDesktop.exe"]
+    },
+    {
+      "name": "docker desktop",
+      "aliases": ["docker", "contenedores"],
+      "targets": ["Docker Desktop.exe", "docker"]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+LISTA AMPLIADA - IA LOCAL COMO MASCOTA EN TU PC
+Fecha: 2026-03-13
+
+QUE PUEDE HACER MUY BIEN EN LOCAL
+1. Conversacion general, comandos rapidos y recordatorios.
+2. Abrir/cerrar apps, cambiar volumen, pausar musica, controles multimedia.
+3. Gestion de archivos: crear carpetas, mover, renombrar, archivar, limpiar escritorio.
+4. Busqueda local: localizar documentos por nombre, fecha, tamano, tipo.
+5. Resumenes de texto local: notas, txt, md, codigo.
+6. Flujos simples: si pasa X, haz Y con reglas.
+7. Mascota con estados vivos: escuchando, pensando, ejecutando, cansada, feliz, etc.
+8. Memoria local de habitos: horas de uso, apps frecuentes, tareas repetitivas.
+
+QUE PUEDE HACER, PERO CON MAS INGENIERIA
+1. Redactar correos automaticamente.
+2. Preparar respuestas de correo con plantillas.
+3. Leer agenda y proponer bloques de trabajo.
+4. Automatizar formularios web.
+5. Integrarse con calendario y tareas.
+
+PUNTO CLAVE
+Aunque el cerebro sea local, correo/calendario normalmente son servicios en internet. Eso no rompe privacidad total, pero si implica salida de datos en esa funcion puntual.
+
+CORREO ELECTRONICO: SI, PERO CON LIMITES
+1. Puede escribir borradores de alta calidad localmente.
+2. Puede abrir tu cliente de correo y dejar el mensaje listo para revision.
+3. Puede enviar automaticamente, pero no se recomienda sin confirmacion humana.
+4. Para enviar por SMTP/API necesita credenciales y conexion externa.
+5. Mejor practica: flujo borrador + confirmacion final.
+
+LIMITACIONES REALES POR FUNCIONES
+1. Acciones ambiguas: si la instruccion es vaga, puede equivocarse.
+2. Acciones irreversibles: borrar/mover masivo sin validacion puede causar danos.
+3. Captchas, 2FA y sitios complejos: la automatizacion se rompe facil.
+4. UIs que cambian mucho: scripts por clics se vuelven fragiles.
+5. Dependencia de permisos: si bloqueas permisos, mejora seguridad pero reduce alcance.
+
+LIMITACIONES DE RENDIMIENTO EN TU HARDWARE (7.28 GB RAM)
+1. Modelos chicos: excelente para asistente diario, menos para razonamiento largo.
+2. Latencia moderada: respuestas mas lentas que nube en tareas complejas.
+3. Multitarea limitada: voz + modelo + automatizacion puede saturar RAM.
+4. Contexto corto: conviene sesiones compactas y memoria resumida.
+5. Modelos grandes 7B+ no son recomendables para uso fluido en tu equipo actual.
+
+LIMITACIONES DE PRIVACIDAD
+1. Local no significa invulnerable: puede existir telemetria de herramientas si no la desactivas.
+2. Tu reconocimiento de voz actual usa servicio externo si no migras a STT local.
+3. Si conectas correo/nube, habra transferencia de datos de esa tarea especifica.
+4. Automatizar navegador puede exponer datos sensibles si no hay controles.
+
+QUE TAN JARVIS PUEDE SER EN LOCAL
+1. 70-80% de utilidad diaria en tareas repetitivas y control de PC.
+2. 40-60% en tareas web complejas (depende del sitio y autenticacion).
+3. 20-40% en autonomia total sin supervision, por seguridad y robustez.
+
+ARQUITECTURA RECOMENDADA PARA QUE FUNCIONE BIEN
+1. Modo por niveles: consulta, archivos, sistema, internet.
+2. Confirmacion obligatoria en acciones criticas.
+3. Lista blanca de rutas y apps permitidas.
+4. Logs locales de cada accion ejecutada.
+5. Modo simulacion antes de ejecutar cambios reales.
+
+MATRIZ AMPLIADA (FUNCION / INTERNET / RIESGO / COSTO RENDIMIENTO / RECOMENDACION)
+1. Chat local general / No / Bajo / Bajo / Activar.
+2. Abrir y cerrar programas / No / Medio / Bajo / Activar con lista blanca.
+3. Control multimedia (play, pause, siguiente) / No / Bajo / Bajo / Activar.
+4. Crear, mover, renombrar archivos / No / Medio / Bajo / Activar con confirmacion en lote.
+5. Borrado permanente de archivos / No / Alto / Bajo / Solo con doble confirmacion.
+6. Limpieza automatica de escritorio / No / Medio / Bajo / Activar con regla de exclusion.
+7. Recordatorios y timers / No / Bajo / Muy bajo / Activar.
+8. Resumen de documentos locales / No / Bajo / Medio / Activar.
+9. Busqueda semantica de notas locales / No / Bajo / Medio / Activar si hay indice local.
+10. Dictado de voz a texto (STT local) / No / Bajo / Medio / Activar (Vosk o Whisper tiny).
+11. Texto a voz (TTS local) / No / Bajo / Bajo / Activar (Piper).
+12. Escribir correo como borrador / Si (al abrir correo web o cliente online) / Medio / Medio / Activar con revision humana.
+13. Enviar correo automaticamente / Si / Alto / Medio / No recomendado sin confirmacion final.
+14. Leer y clasificar correo / Si / Medio-Alto / Medio / Activar solo con filtros y permisos minimos.
+15. Automatizar formularios web / Si / Medio / Medio-Alto / Activar solo para sitios estables.
+16. Operaciones bancarias o pagos / Si / Muy alto / Medio / No automatizar en modo autonomo.
+17. Integracion calendario online / Si / Medio / Bajo-Medio / Activar con permisos minimos.
+18. Acciones en segundo plano cada cierto tiempo / No / Medio / Bajo / Activar con limites.
+19. Aprendizaje de habitos local (sin nube) / No / Bajo / Bajo-Medio / Activar.
+20. Control del sistema (apagado/reinicio) / No / Alto / Bajo / Solo por comando explicito.
+
+LIMITES PRACTICOS EN TU EQUIPO ACTUAL
+1. Priorizar modelos 1.5B a 3B cuantizados.
+2. Evitar 7B+ para uso continuo.
+3. Mantener contexto de conversacion corto.
+4. Evitar ejecutar STT pesado + LLM + automatizacion compleja al mismo tiempo.
+5. Aplicar pausas o cola de tareas para estabilidad.
+
+RECOMENDACION OPERATIVA FINAL
+1. Mantener modo local por defecto.
+2. Habilitar internet solo en funciones que realmente lo requieren (correo/calendario).
+3. Exigir confirmacion humana para acciones irreversibles.
+4. Usar bitacora local de acciones para auditar.
+5. Empezar con automatizaciones simples y subir complejidad de forma gradual.

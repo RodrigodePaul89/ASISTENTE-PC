@@ -10,5 +10,137 @@
     "action": "auto_create_folder",
     "detail": "C:\\Users\\WinterOS\\Desktop\\AsistentePC",
     "status": "ok"
+  },
+  {
+    "timestamp": 1773102547,
+    "action": "auto_create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\AsistentePC",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773421430,
+    "action": "auto_create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\AsistentePC",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773421485,
+    "action": "media_key",
+    "detail": "prev",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773423107,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\asistente_local",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773423143,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\Carpeta creada por Ollama",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773427065,
+    "action": "auto_create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\AsistentePC",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773433409,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\prueba1",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773433997,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\prueba1",
+    "status": "exists"
+  },
+  {
+    "timestamp": 1773434019,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\prueba2",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773447567,
+    "action": "open_website",
+    "detail": "https://github.com",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773447632,
+    "action": "screenshot",
+    "detail": "C:\\Users\\WinterOS\\Documents\\MimiAsistente\\Capturas\\20260313_192032_captura.png",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773447700,
+    "action": "open_app",
+    "detail": "el explorador de archivos",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1773447801,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\pruebasMimi",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773510733,
+    "action": "open_app",
+    "detail": "el explorador de archivos de mi computador",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1773677874,
+    "action": "create_folder_structure",
+    "detail": "crea carpeta daivd es gey",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773677988,
+    "action": "open_website",
+    "detail": "https://gmail.com",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1773678091,
+    "action": "system_control",
+    "detail": "lock",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1774450133,
+    "action": "create_folder",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\ivanesgey",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1774450147,
+    "action": "open_app",
+    "detail": "la carpeta \"ivanesgey\"->illustrator",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1774450618,
+    "action": "delete_item",
+    "detail": "C:\\Users\\WinterOS\\Desktop\\la carpeta ivanesgey del escritorio",
+    "status": "missing"
+  },
+  {
+    "timestamp": 1774450663,
+    "action": "open_app",
+    "detail": "wasa->whatsapp",
+    "status": "error:[WinError 2] El sistema no puede encontrar el archivo especificado"
+  },
+  {
+    "timestamp": 1774450702,
+    "action": "open_app",
+    "detail": "code->code",
+    "status": "ok"
   }
 ]
