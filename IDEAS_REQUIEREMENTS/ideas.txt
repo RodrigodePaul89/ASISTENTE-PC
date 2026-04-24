@@ -1,0 +1,40 @@
+creacion de comando para identificar la accion que mimi
+deba cumplir, por ejemplo un comando "<mimi (seguido de 
+la funcion a cumplir)" este comando "<mimi" servira 
+exclusivamente para funciones de creacion y eliminacion
+generales
+
+Una adicion a la funcion "!next" para pasar a la siguiente  
+cancion de la cola al usarla sin nada delante de ella, ademas
+el añadir el comando "!mimi" para acceder a los ajustes de lista de reproduccion
+donde puede ser eliminar, mover, controlar volumenes de las canciones
+en la lista de reproduccion
+
+Las conversaciones que inicien sin un comando establecido (sin signo)
+sera tomado como parte de una conversacion para interactuar con mimi
+
+Empezar a trabajar los comando de voz parecido a la funcion de los celulares con el 
+OK GOOGLE pero adaptandolo a nuestro trabajo quedando el "OK mimi" para ejecutar una 
+accion, de igual manera que lo hablado si no se inicia con un comando establecido se
+tomara como una conversacion entre mimi y usuario
+
+-------------------------------------------------------------------------------------------
+
+Control de botones para el volumen, arreglar la funcion del boton de pausa/despausa,
+mejora en la interfaz de las canciones para que no se vea igual a la interfaz de chat 
+y de busqueda, etc,   limpieza de chat automatica al apagar a mimi para que al 
+encenderla tenga el chat limpio, mejorar la logica de interferencias de mimi 
+al detectar las pestañas abiertas (no ser tan repetitiva con sus comentarios), en ese aspecto
+tambien añadir la desaparicion automatica de sus comentarios sobre lo que estamos haciendo
+despues de 3 segundos al no pasar el cursor por encima del mensaje(si se ignora se va),
+ubicacion inicial de los cuadros con botones, nombre de la cancion y mimi al ejecutar
+"!play xcancion" en el centro de la pantalla, pausar la deteccion de pantallas y comentarios
+de mimi mientras de reproduce alguna cancion, y abrir/cerrar de manera automatica el chat para 
+añadir, pausar, salir, etc.. al pasar el cursor sobre mimi mientras suena alguna cancion
+con un efecto de desvanecimiento para que no sea tan simple, evitar descargar canciones
+ya descargadas para evitar tener duplicados, antes de que suene la cancion solicitada una 
+busqueda rapida en la memoria para no descargar una cancion ya descargadas
+
+Investigar sobre opciones de recursividad para empezar a ejecutar a mimi de manera automatica
+al encender el computador, se mantenga de manera incognita y que espere algun comando 
+"ejemplo ctrl + m + 1" para que mimi aparezca de manera visual y se empieze a interactuar con ella
