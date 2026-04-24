@@ -430,5 +430,203 @@
     "action": "music_play",
     "detail": "sirena encantada",
     "status": "ok"
+  },
+  {
+    "timestamp": 1776891801,
+    "action": "music_queue",
+    "detail": "hilito",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776891989,
+    "action": "music_play",
+    "detail": "hilito",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776892373,
+    "action": "music_play",
+    "detail": "a dios le pido",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776892436,
+    "action": "music_queue",
+    "detail": "elvis crespo - tu sonrisa",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776892591,
+    "action": "music_play",
+    "detail": "elvis crespo - tu sonrisa",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776892615,
+    "action": "music_queue",
+    "detail": "anhelo",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776892866,
+    "action": "music_play",
+    "detail": "anhelo",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776892980,
+    "action": "music_queue",
+    "detail": "cama y mesa",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776893123,
+    "action": "music_play",
+    "detail": "cama y mesa",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776893512,
+    "action": "music_play",
+    "detail": "calabria 2007 - enur & natasja",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776894701,
+    "action": "music_play",
+    "detail": "piel con piel",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776894711,
+    "action": "music_queue",
+    "detail": "sabanas blancas",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776894741,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776894773,
+    "action": "music_play",
+    "detail": "piel con piel",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776894777,
+    "action": "music_queue",
+    "detail": "sabanas blancas",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776895023,
+    "action": "music_play",
+    "detail": "sabanas blancas",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776895340,
+    "action": "open_website",
+    "detail": "https://pinterest.com",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776895617,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776895780,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776953551,
+    "action": "music_play",
+    "detail": "rosa pastel",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776953616,
+    "action": "music_queue",
+    "detail": "rx",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776953645,
+    "action": "music_play",
+    "detail": "rx",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776953752,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776953872,
+    "action": "music_play",
+    "detail": "doma",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776954059,
+    "action": "music_exit",
+    "detail": "session",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776955299,
+    "action": "music_play",
+    "detail": "another night",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776955467,
+    "action": "music_play",
+    "detail": "la vaca",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776955520,
+    "action": "music_play",
+    "detail": "nuestra cancion",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776955791,
+    "action": "music_play",
+    "detail": "el beeper",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776956029,
+    "action": "music_play",
+    "detail": "un poquito mas de ti",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776956250,
+    "action": "music_play",
+    "detail": "lya no queda nada",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776956298,
+    "action": "music_play",
+    "detail": "ya no queda nada los hermanos medina",
+    "status": "ok"
+  },
+  {
+    "timestamp": 1776957052,
+    "action": "music_play",
+    "detail": "nada de ti",
+    "status": "ok"
   }
 ]

@@ -22,205 +22,27 @@
   "pet_memory_notes": [],
   "music_memory": [
     {
-      "timestamp": 1776169617,
-      "query": "doma",
-      "source": "youtube_music",
-      "lyrics_snippet": "",
-      "micro_snippet": "",
-      "transcription_source": "none",
-      "concepts": [
-        "doma"
-      ]
-    },
-    {
-      "timestamp": 1776888686,
-      "query": "la noche mas linda",
-      "source": "youtube_music_browser",
-      "lyrics_snippet": "",
-      "micro_snippet": "",
-      "transcription_source": "none",
-      "concepts": [
-        "linda",
-        "noche"
-      ]
-    },
-    {
-      "timestamp": 1776888727,
-      "query": "doma",
-      "source": "youtube_music_browser",
-      "lyrics_snippet": "",
-      "micro_snippet": "",
-      "transcription_source": "none",
-      "concepts": [
-        "doma"
-      ]
-    },
-    {
-      "timestamp": 1776890222,
-      "query": "la noche mas linda del mundo",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "linda",
-        "mundo",
-        "noche"
-      ]
-    },
-    {
-      "timestamp": 1776890245,
-      "query": "La Noche Mas Linda",
-      "source": "interrupted_review",
-      "lyrics_snippet": "",
-      "concepts": [
-        "linda",
-        "noche"
-      ],
-      "interrupted": true
-    },
-    {
-      "timestamp": 1776890249,
-      "query": "doma",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "doma"
-      ]
-    },
-    {
-      "timestamp": 1776890272,
-      "query": "Jo\u0301sean Log - Doma (Lyric Video)",
-      "source": "interrupted_review",
-      "lyrics_snippet": "Que fatalidad, eres mi h\u00e9roe y mi villana Podr\u00eda enloquecer descifrando tu conspiraci\u00f3n Muero por saber el desenlace de esta trama comienza a Anochecer y el coraz\u00f3n va al descubier",
-      "concepts": [
-        "anochecer",
-        "caricias",
-        "comienza",
-        "conspiraci\u00f3n",
-        "coraz\u00f3n"
-      ],
-      "interrupted": true
-    },
-    {
-      "timestamp": 1776890277,
-      "query": "the winner takes all",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "takes",
-        "winner"
-      ]
-    },
-    {
-      "timestamp": 1776890593,
-      "query": "ABBA - The Winner Takes It All",
-      "source": "interrupted_review",
-      "lyrics_snippet": "I don't wanna talk About the things we've gone through Though it's hurting me Now it's history I've played all my cards And that's what you've done too Nothing more to say No more ",
-      "concepts": [
-        "more",
-        "takes",
-        "winner",
-        "abba",
-        "about"
-      ],
-      "interrupted": true
-    },
-    {
-      "timestamp": 1776890597,
-      "query": "doma",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "doma"
-      ]
-    },
-    {
-      "timestamp": 1776890715,
-      "query": "Jo\u0301sean Log - Doma (Lyric Video)",
-      "source": "interrupted_review",
-      "lyrics_snippet": "Que fatalidad, eres mi h\u00e9roe y mi villana Podr\u00eda enloquecer descifrando tu conspiraci\u00f3n Muero por saber el desenlace de esta trama comienza a Anochecer y el coraz\u00f3n va al descubier",
-      "concepts": [
-        "anochecer",
-        "caricias",
-        "comienza",
-        "conspiraci\u00f3n",
-        "coraz\u00f3n"
-      ],
-      "interrupted": true
-    },
-    {
-      "timestamp": 1776890719,
-      "query": "sexytekk",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "sexytekk"
-      ]
-    },
-    {
-      "timestamp": 1776890915,
-      "query": "SEXYTEKK (Ultra Slowed)",
-      "source": "interrupted_review",
-      "lyrics_snippet": "",
-      "concepts": [
-        "sexytekk",
-        "slowed",
-        "ultra"
-      ],
-      "interrupted": true
-    },
-    {
-      "timestamp": 1776890923,
-      "query": "te extra\u00f1o - xtreme",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "extra\u00f1o",
-        "xtreme"
-      ]
-    },
-    {
-      "timestamp": 1776890957,
-      "query": "Xtreme - Te Extra\u00f1o (Bachata Version) | Visualizer",
-      "source": "interrupted_review",
-      "lyrics_snippet": "",
-      "concepts": [
-        "bachata",
-        "extra\u00f1o",
-        "version",
-        "visualizer",
-        "xtreme"
-      ],
-      "interrupted": true
-    },
-    {
-      "timestamp": 1776890961,
-      "query": "con el viento a tu favor",
-      "source": "youtube",
-      "lyrics_snippet": "",
-      "concepts": [
-        "favor",
-        "viento"
-      ]
-    },
-    {
       "timestamp": 1776890977,
       "query": "Camilo Sesto - Con el viento a tu favor",
       "source": "interrupted_review",
       "lyrics_snippet": "No s\u00e8 cuando sufro m\u00e0s. Si am\u00e0ndote o queri\u00e8ndote olvidar. Que amargo es amar sin ser amado, y sentirse atado a los recuerdos de un pasado. Camino perdido entre dos aguas, sintiend",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "ndote",
         "aguas",
         "amado",
         "amar",
         "amargo"
-      ],
-      "interrupted": true
+      ]
     },
     {
       "timestamp": 1776890982,
       "query": "welcome to my crib",
       "source": "youtube",
       "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "crib",
         "welcome"
@@ -231,17 +53,20 @@
       "query": "Welcome To My Crib",
       "source": "interrupted_review",
       "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "crib",
         "welcome"
-      ],
-      "interrupted": true
+      ]
     },
     {
       "timestamp": 1776891165,
       "query": "con el viento a tu favor",
       "source": "youtube",
       "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "favor",
         "viento"
@@ -252,20 +77,23 @@
       "query": "Camilo Sesto - Con el viento a tu favor",
       "source": "interrupted_review",
       "lyrics_snippet": "No s\u00e8 cuando sufro m\u00e0s. Si am\u00e0ndote o queri\u00e8ndote olvidar. Que amargo es amar sin ser amado, y sentirse atado a los recuerdos de un pasado. Camino perdido entre dos aguas, sintiend",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "ndote",
         "aguas",
         "amado",
         "amar",
         "amargo"
-      ],
-      "interrupted": true
+      ]
     },
     {
       "timestamp": 1776891497,
       "query": "vitamina",
       "source": "youtube",
       "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "vitamina"
       ]
@@ -275,55 +103,445 @@
       "query": "Jombriel, DFZM - Vitamina (Video Oficial)",
       "source": "interrupted_review",
       "lyrics_snippet": "Mami, long time sin saber de ti, merco una moto pa' llegarte, ma Ahora la vuelta e' distinta, pasa'o de tinta Le met\u00ed quinta, ya voy por ah\u00ed, yo le caigo de una ve' De Esmeralda' l",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "ahora",
         "baj\u00e9",
         "caigo",
         "cambiamo",
         "conocer"
-      ],
-      "interrupted": true
+      ]
     },
     {
       "timestamp": 1776891626,
       "query": "sirena encantada",
       "source": "youtube",
       "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
       "concepts": [
         "encantada",
         "sirena"
       ]
+    },
+    {
+      "timestamp": 1776891986,
+      "query": "Sirena Encantada, Miguel Morales, Video Letra - Sentir Vallenato",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "encantada",
+        "letra",
+        "miguel",
+        "morales",
+        "sentir"
+      ]
+    },
+    {
+      "timestamp": 1776891989,
+      "query": "hilito",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "hilito"
+      ]
+    },
+    {
+      "timestamp": 1776892368,
+      "query": "Romeo Santos - Hilito (Official Audio)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "Dile al tiempo que perdone En los a\u00f1os que demoren Que los meses tengan 30 d\u00edas de m\u00e1s Necesito otro siglo, una p\u00edldora de olvido Algo \u00fatil que me ayude a borrar Sin ti me he conve",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "algo",
+        "audio",
+        "ayude",
+        "a\u00f1os",
+        "borrar"
+      ]
+    },
+    {
+      "timestamp": 1776892373,
+      "query": "a dios le pido",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "dios",
+        "pido"
+      ]
+    },
+    {
+      "timestamp": 1776892585,
+      "query": "Juanes - A Dios Le Pido",
+      "source": "interrupted_review",
+      "lyrics_snippet": "Que mis ojos se despierten con la luz de tu mirada yo a Dios le pido... Que mi madre no se muera y que mi padre me recuerde a Dios le pido Que te quedes a mi lado y que m\u00e1s nunca t",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "dios",
+        "pido",
+        "alma",
+        "amarte",
+        "descanse"
+      ]
+    },
+    {
+      "timestamp": 1776892591,
+      "query": "elvis crespo - tu sonrisa",
+      "source": "youtube",
+      "lyrics_snippet": "Algo en tu cara me fascina algo en tu cara me da vida ser\u00e1 tu sonrisa ser\u00e1 tu sonrisa algo en tu cara me fascina algo en tu cara me da vida ser\u00e1 tu sonrisa ser\u00e1 tu sonrisa Algo en",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "sonrisa",
+        "cara",
+        "algo",
+        "ser\u00e1",
+        "fascina",
+        "vida"
+      ]
+    },
+    {
+      "timestamp": 1776892861,
+      "query": "Elvis Crespo - Tu Sonrisa",
+      "source": "interrupted_review",
+      "lyrics_snippet": "Algo en tu cara me fascina algo en tu cara me da vida ser\u00e1 tu sonrisa ser\u00e1 tu sonrisa algo en tu cara me fascina algo en tu cara me da vida ser\u00e1 tu sonrisa ser\u00e1 tu sonrisa Algo en",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "sonrisa",
+        "algo",
+        "cara",
+        "ser\u00e1",
+        "fascina"
+      ]
+    },
+    {
+      "timestamp": 1776892866,
+      "query": "anhelo",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "anhelo"
+      ]
+    },
+    {
+      "timestamp": 1776893118,
+      "query": "Adolescent's Orquesta - Anhelo (Letra Oficial)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "adolescent",
+        "anhelo",
+        "letra",
+        "oficial",
+        "orquesta"
+      ]
+    },
+    {
+      "timestamp": 1776893123,
+      "query": "cama y mesa",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "cama",
+        "mesa"
+      ]
+    },
+    {
+      "timestamp": 1776893512,
+      "query": "calabria 2007 - enur & natasja",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "2007",
+        "calabria",
+        "enur",
+        "natasja"
+      ]
+    },
+    {
+      "timestamp": 1776894701,
+      "query": "piel con piel",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "piel"
+      ]
+    },
+    {
+      "timestamp": 1776894773,
+      "query": "piel con piel",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "piel"
+      ]
+    },
+    {
+      "timestamp": 1776895018,
+      "query": "LA SANTA GRIFA // PIEL CON PIEL // VIDEO OFICIAL (River Beats)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "piel",
+        "beats",
+        "grifa",
+        "oficial",
+        "river"
+      ]
+    },
+    {
+      "timestamp": 1776895023,
+      "query": "sabanas blancas",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "blancas",
+        "sabanas"
+      ]
+    },
+    {
+      "timestamp": 1776895617,
+      "query": "doma",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "doma"
+      ]
+    },
+    {
+      "timestamp": 1776953551,
+      "query": "rosa pastel",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "pastel",
+        "rosa"
+      ]
+    },
+    {
+      "timestamp": 1776953636,
+      "query": "Belanova - Rosa Pastel",
+      "source": "interrupted_review",
+      "lyrics_snippet": "S\u00ed yo quer\u00eda ser esa mujer la madre de tus hijos y juntos caminar hacia el altar directo hacia la muerte y al final ni hablar los dos nos destruimos y al final qu\u00e9 tal tu y yo ya n",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "final",
+        "hacia",
+        "mujer",
+        "abismo",
+        "altar"
+      ]
+    },
+    {
+      "timestamp": 1776953645,
+      "query": "rx",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": []
+    },
+    {
+      "timestamp": 1776953872,
+      "query": "doma",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "micro_snippet": "",
+      "transcription_source": "none",
+      "concepts": [
+        "doma"
+      ]
+    },
+    {
+      "timestamp": 1776955299,
+      "query": "another night",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "another",
+        "night"
+      ]
+    },
+    {
+      "timestamp": 1776955460,
+      "query": "Another Night",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "another",
+        "night"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776955467,
+      "query": "la vaca",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "vaca"
+      ]
+    },
+    {
+      "timestamp": 1776955513,
+      "query": "La VACA \ud83d\udc2e - Mala Fe  [Video Oficial]",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "mala",
+        "oficial",
+        "vaca",
+        "video"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776955520,
+      "query": "nuestra cancion",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "nuestra"
+      ]
+    },
+    {
+      "timestamp": 1776955791,
+      "query": "el beeper",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "beeper"
+      ]
+    },
+    {
+      "timestamp": 1776956029,
+      "query": "un poquito mas de ti",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "poquito"
+      ]
+    },
+    {
+      "timestamp": 1776956241,
+      "query": "Solo Rumba - Un poquito mas de ti (Video oficial)",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "oficial",
+        "poquito",
+        "rumba",
+        "solo",
+        "video"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776956250,
+      "query": "lya no queda nada",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "nada",
+        "queda"
+      ]
+    },
+    {
+      "timestamp": 1776956288,
+      "query": "Ya No Queda Nada  angeles  salsa nueva 2011 de colombia",
+      "source": "interrupted_review",
+      "lyrics_snippet": "",
+      "concepts": [
+        "2011",
+        "angeles",
+        "colombia",
+        "nada",
+        "nueva"
+      ],
+      "interrupted": true
+    },
+    {
+      "timestamp": 1776956297,
+      "query": "ya no queda nada los hermanos medina",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "hermanos",
+        "medina",
+        "nada",
+        "queda"
+      ]
+    },
+    {
+      "timestamp": 1776957052,
+      "query": "nada de ti",
+      "source": "youtube",
+      "lyrics_snippet": "",
+      "concepts": [
+        "nada"
+      ]
     }
   ],
   "music_personality_concepts": [
-    "slowed",
-    "ultra",
-    "extra\u00f1o",
-    "xtreme",
-    "bachata",
-    "version",
-    "visualizer",
-    "favor",
-    "viento",
-    "ndote",
-    "aguas",
-    "amado",
-    "amar",
-    "amargo",
-    "crib",
-    "welcome",
-    "vitamina",
-    "ahora",
-    "baj\u00e9",
-    "caigo",
-    "cambiamo",
-    "conocer",
-    "encantada",
-    "sirena"
+    "final",
+    "hacia",
+    "mujer",
+    "abismo",
+    "altar",
+    "another",
+    "night",
+    "vaca",
+    "mala",
+    "oficial",
+    "video",
+    "nuestra",
+    "beeper",
+    "poquito",
+    "rumba",
+    "solo",
+    "nada",
+    "queda",
+    "2011",
+    "angeles",
+    "colombia",
+    "nueva",
+    "hermanos",
+    "medina"
   ],
   "music_queue": [],
-  "music_session_active": true,
-  "music_current_song": "Sirena Encantada, Miguel Morales, Video Letra - Sentir Vallenato",
+  "music_session_active": false,
+  "music_current_song": "",
   "chat_transcript": [
     [
       "Mascota",
@@ -335,11 +553,55 @@
     ],
     [
       "Tu",
-      "!play la noche mas linda del mundo"
+      "!play rosa pastel"
     ],
     [
       "Mascota",
-      "No pude reproducir esa cancion en segundo plano. Detalle tecnico: ffmpeg no disponible para convertir audio a WAV."
+      "Listo, ya esta sonando: Belanova - Rosa Pastel. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!next  rx"
+    ],
+    [
+      "Mascota",
+      "Agregada a la cola: rx."
+    ],
+    [
+      "Mimi",
+      "Ahora suena: Don Omar, Kendo Kapponi - RX (Visualizer)."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: Program Manager. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+    ],
+    [
+      "Mimi",
+      "Estas navegando. Si me dices !play o !next puedo gestionar la musica sin perder contexto."
+    ],
+    [
+      "Mimi",
+      "Cerrando la sesion musical y limpiando cola."
+    ],
+    [
+      "Mimi",
+      "Estas navegando. Si me dices !play o !next puedo gestionar la musica sin perder contexto."
+    ],
+    [
+      "Mimi",
+      "Estas navegando. Si me dices !play o !next puedo gestionar la musica sin perder contexto."
+    ],
+    [
+      "Mimi",
+      "Estas navegando. Si me dices !play o !next puedo gestionar la musica sin perder contexto."
+    ],
+    [
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
     ],
     [
       "Tu",
@@ -347,151 +609,7 @@
     ],
     [
       "Mascota",
-      "No pude reproducir esa cancion en segundo plano. Detalle tecnico: ffmpeg no disponible para convertir audio a WAV."
-    ],
-    [
-      "Mimi",
-      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
-    ],
-    [
-      "Mimi",
-      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
-    ],
-    [
-      "Mimi",
-      "Como te estas sintiendo ahora con lo que estas haciendo?"
-    ],
-    [
-      "Tu",
-      "!play la noche mas linda del mundo"
-    ],
-    [
-      "Mascota",
-      "Listo, ya esta sonando: La Noche Mas Linda. Aprendi conceptos principales de la cancion."
-    ],
-    [
-      "Mimi",
-      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
-    ],
-    [
-      "Tu",
-      "!next doma"
-    ],
-    [
-      "Mascota",
-      "Agregada a la cola: doma."
-    ],
-    [
-      "Mimi",
-      "Ahora suena: Jo\u0301sean Log - Doma (Lyric Video)."
-    ],
-    [
-      "Mimi",
-      "La cola musical esta vacia."
-    ],
-    [
-      "Mimi",
-      "La cola musical esta vacia."
-    ],
-    [
-      "Tu",
-      "!play the winner takes all"
-    ],
-    [
-      "Mascota",
-      "Listo, ya esta sonando: ABBA - The Winner Takes It All. Aprendi conceptos principales de la cancion."
-    ],
-    [
-      "Mimi",
-      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
-    ],
-    [
-      "Mimi",
-      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
-    ],
-    [
-      "Tu",
-      "!next doma"
-    ],
-    [
-      "Mascota",
-      "Agregada a la cola: doma."
-    ],
-    [
-      "Mimi",
-      "Veo mensajeria abierta. Si quieres, te recuerdo responder mensajes importantes."
-    ],
-    [
-      "Mimi",
-      "Ahora suena: Jo\u0301sean Log - Doma (Lyric Video)."
-    ],
-    [
-      "Mimi",
-      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
-    ],
-    [
-      "Mimi",
-      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
-    ],
-    [
-      "Mimi",
-      "Como te estas sintiendo ahora con lo que estas haciendo?"
-    ],
-    [
-      "Mimi",
-      "La cola musical esta vacia."
-    ],
-    [
-      "Mimi",
-      "La cola musical esta vacia."
-    ],
-    [
-      "Mimi",
-      "La cola musical esta vacia."
-    ],
-    [
-      "Tu",
-      "!play SEXYTEKK"
-    ],
-    [
-      "Mascota",
-      "Listo, ya esta sonando: SEXYTEKK (Ultra Slowed). Aprendi conceptos principales de la cancion."
-    ],
-    [
-      "Tu",
-      "!next te extra\u00f1o - xtreme"
-    ],
-    [
-      "Mascota",
-      "Agregada a la cola: te extra\u00f1o - xtreme."
-    ],
-    [
-      "Tu",
-      "!next welcome to my crib"
-    ],
-    [
-      "Mascota",
-      "Agregada a la cola: welcome to my crib."
-    ],
-    [
-      "Mimi",
-      "Ahora suena: Xtreme - Te Extra\u00f1o (Bachata Version) | Visualizer."
-    ],
-    [
-      "Mimi",
-      "Ventana activa: Program Manager. Estoy atenta al contexto de tu pantalla."
-    ],
-    [
-      "Tu",
-      "!play con el viento a tu favor"
-    ],
-    [
-      "Mascota",
-      "Listo, ya esta sonando: Camilo Sesto - Con el viento a tu favor. Aprendi conceptos principales de la cancion."
-    ],
-    [
-      "Mimi",
-      "Ahora suena: Welcome To My Crib."
+      "Listo, ya esta sonando: Jo\u0301sean Log - Doma (Lyric Video). Aprendi conceptos principales de la cancion."
     ],
     [
       "Mimi",
@@ -506,12 +624,12 @@
       "Como te estas sintiendo ahora con lo que estas haciendo?"
     ],
     [
-      "Tu",
-      "!play con el viento a tu favor"
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
     ],
     [
-      "Mascota",
-      "Listo, ya esta sonando: Camilo Sesto - Con el viento a tu favor. Aprendi conceptos principales de la cancion."
+      "Mimi",
+      "Cerrando la sesion musical y limpiando cola."
     ],
     [
       "Mimi",
@@ -522,50 +640,258 @@
       "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
     ],
     [
-      "Tu",
-      "!play vitamina"
-    ],
-    [
-      "Mascota",
-      "Listo, ya esta sonando: Jombriel, DFZM - Vitamina (Video Oficial). Aprendi conceptos principales de la cancion."
-    ],
-    [
-      "Tu",
-      "!play sirena encantada"
-    ],
-    [
-      "Mascota",
-      "Listo, ya esta sonando: Sirena Encantada, Miguel Morales, Video Letra - Sentir Vallenato. Aprendi conceptos principales de la cancion."
+      "Mimi",
+      "Ventana activa: tk. Estoy atenta al contexto de tu pantalla."
     ],
     [
       "Mimi",
-      "Estas en modo desarrollo. Puedo ayudarte a mantener foco con recordatorios cortos."
+      "Como te estas sintiendo ahora con lo que estas haciendo?"
+    ],
+    [
+      "Tu",
+      "!play another night"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Another Night. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play la vaca"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: La VACA \ud83d\udc2e - Mala Fe  [Video Oficial]. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play nuestra cancion"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Elvis Crespo - Nuestra Cancion (Cover Audio). Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play el beeper"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Se Encendio el Beeper. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play un poquito mas de ti"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Solo Rumba - Un poquito mas de ti (Video oficial). Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play lya no queda nada"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Ya No Queda Nada  angeles  salsa nueva 2011 de colombia. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play ya no queda nada los hermanos medina"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Ya No Queda Nada - Los Hermanos Medina  | Video Oficial. Aprendi conceptos principales de la cancion."
+    ],
+    [
+      "Tu",
+      "!play nada de ti"
+    ],
+    [
+      "Mascota",
+      "Listo, ya esta sonando: Jerry Rivera - Nada Sin Ti (Cover Audio Video). Aprendi conceptos principales de la cancion."
     ],
     [
       "Mimi",
-      "Llevas rato en modo codigo. Como te sientes con el avance: fluido, trabado o cansado?"
+      "Ventana activa: Program Manager. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Como te estas sintiendo ahora con lo que estas haciendo?"
+    ],
+    [
+      "Mimi",
+      "Ventana activa: Pantalla de bloqueo predeterminada de Windows. Estoy atenta al contexto de tu pantalla."
+    ],
+    [
+      "Mimi",
+      "Como te estas sintiendo ahora con lo que estas haciendo?"
+    ],
+    [
+      "Mimi",
+      "Ventana activa: Program Manager. Estoy atenta al contexto de tu pantalla."
     ]
   ],
   "interest_profile": [
     {
       "topic": "assistant config json",
-      "score": 25.0
+      "score": 23.16000000000004
     },
     {
       "topic": "juegos los habia mas",
-      "score": 6.800000000000002
+      "score": 19.60000000000003
     },
     {
-      "topic": "youtube music",
-      "score": 3.06
+      "topic": "doc maker",
+      "score": 5.600000000000028
     },
     {
-      "topic": "ventana desbordamiento bandeja del",
-      "score": 0.49999999999999956
+      "topic": "word",
+      "score": 5.560000000000024
+    },
+    {
+      "topic": "bloodstrike",
+      "score": 5.3600000000000065
     },
     {
       "topic": "conmutaci\u00f3n tareas",
+      "score": 4.640000000000004
+    },
+    {
+      "topic": "pesta\u00f1a",
+      "score": 4.220000000000003
+    },
+    {
+      "topic": "pinterest",
+      "score": 2.7399999999999998
+    },
+    {
+      "topic": "assistant actions json",
+      "score": 2.1599999999999997
+    },
+    {
+      "topic": "www aidocmaker com desea",
+      "score": 2.1199999999999988
+    },
+    {
+      "topic": "rodrigodepaul89 asistente ssart down",
+      "score": 2.1
+    },
+    {
+      "topic": "rodrigodepaul89 asistente asistente virtual",
+      "score": 2.0799999999999996
+    },
+    {
+      "topic": "administrador tareas",
+      "score": 1.7999999999999996
+    },
+    {
+      "topic": "login",
+      "score": 1.6799999999999993
+    },
+    {
+      "topic": "practica cableado estructurado docx",
+      "score": 1.2799999999999994
+    },
+    {
+      "topic": "youtube music",
+      "score": 1.2199999999999984
+    },
+    {
+      "topic": "word cloud microsoft desea",
+      "score": 1.039999999999999
+    },
+    {
+      "topic": "pantalla bloqueo predeterminada",
+      "score": 1.0
+    },
+    {
+      "topic": "rodrigodepaul89 asistente dev prueba",
+      "score": 0.9199999999999999
+    },
+    {
+      "topic": "github",
+      "score": 0.8399999999999999
+    },
+    {
+      "topic": "two factor verification successful",
+      "score": 0.8199999999999998
+    },
+    {
+      "topic": "verify your two factor",
+      "score": 0.7999999999999998
+    },
+    {
+      "topic": "git hub",
+      "score": 0.7799999999999998
+    },
+    {
+      "topic": "document docx",
+      "score": 0.6999999999999986
+    },
+    {
+      "topic": "general los habia mas",
+      "score": 0.6399999999999997
+    },
+    {
+      "topic": "iniciar sesi\u00f3n cuenta",
+      "score": 0.6199999999999988
+    },
+    {
+      "topic": "ventana desbordamiento bandeja del",
+      "score": 0.4599999999999993
+    },
+    {
+      "topic": "explorador archivos",
+      "score": 0.4399999999999995
+    },
+    {
+      "topic": "mega man sprite game",
+      "score": 0.39999999999999947
+    },
+    {
+      "topic": "main",
+      "score": 0.39999999999999836
+    },
+    {
+      "topic": "pin pixel art",
       "score": 0.37999999999999945
+    },
+    {
+      "topic": "pin fight fathoms inspiration",
+      "score": 0.35999999999999943
+    },
+    {
+      "topic": "whatsapp",
+      "score": 0.23999999999999935
+    },
+    {
+      "topic": "buscar",
+      "score": 0.21999999999999936
+    },
+    {
+      "topic": "cargando documentos google",
+      "score": 0.17999999999999938
+    },
+    {
+      "topic": "p\u00e1gina principal",
+      "score": 0.1599999999999994
+    },
+    {
+      "topic": "drive google com desea",
+      "score": 0.1399999999999994
+    },
+    {
+      "topic": "google drive",
+      "score": 0.1199999999999994
+    },
+    {
+      "topic": "drive",
+      "score": 0.0999999999999994
+    },
+    {
+      "topic": "editor documentos l\u00ednea gratuito",
+      "score": 0.019999999999999383
     }
   ],
   "background_knowledge": [
@@ -573,6 +899,26 @@
       "topic": "youtube music",
       "summary": "YouTube Music: YouTube Music is a music streaming service developed by the American video platform YouTube, a subsidiary of Google. The service is designed with an interface that allows users to simultaneously explore music audios and music videos from YouTube-based genres, playlists and recommendations. On December 1, 2020, YouTube Music replaced Google Play Music as Google's primary brand for music streaming. In Ap",
       "timestamp": 1776888692
+    },
+    {
+      "topic": "main",
+      "summary": "El r\u00edo Meno es un r\u00edo de Alemania, que forma el principal afluente del r\u00edo Rin hacia el este. Con 524 kil\u00f3metros de longitud, atraviesa la comarca vitivin\u00edcola de Franconia, que se encuentra en los Estados de Baviera, Baden-Wurtemberg y Hesse. | Chas. T. Main Chas. T. Main Inc. was an engineering company of the United States founded in 1893 and... | Main Deli Steak House A delicatessen and steakhouse located on Saint",
+      "timestamp": 1776894746
+    },
+    {
+      "topic": "pesta\u00f1a",
+      "summary": "Las pesta\u00f1as son cada uno de pelos de la parte anterior del borde libre p\u00e1rpado; ayudan a proteger el ojo de cuerpos extra\u00f1os procedentes del exterior y son altamente sensibles al tacto: cualquier contacto con ellas desencadena un movimiento reflejo que cierra instant\u00e1neamente los p\u00e1rpados. Estos pelos son cortos, r\u00edgidos y encorvados.",
+      "timestamp": 1776953681
+    },
+    {
+      "topic": "word",
+      "summary": "Microsoft Word es un software para procesamiento de textos desarrollado por Microsoft desde 1983 hasta la actualidad. Est\u00e1 incluido en el paquete de aplicaciones Microsoft Office, como parte del software de suscripci\u00f3n en l\u00ednea Microsoft 365 y Works hasta su desaparici\u00f3n. | Word A basic element of language that carries meaning, can be used on its own, and is... | Microsoft Word A word processing program developed by",
+      "timestamp": 1776894883
+    },
+    {
+      "topic": "pinterest",
+      "summary": "Pinterest, Inc. es una red social estadounidense que permite a los usuarios crear y administrar, en tableros personales tem\u00e1ticos, colecciones de im\u00e1genes como eventos, intereses, aficiones y mucho m\u00e1s. Los usuarios pueden buscar otros pinboards, \"repinchar\" im\u00e1genes para sus propias colecciones. La misi\u00f3n de Pinterest es \u00abconectar a todos en el mundo, a trav\u00e9s de cosas que encuentran interesantes\u00bb tambi\u00e9n se puede c",
+      "timestamp": 1776895345
     }
   ],
   "emotional_checkins": [
@@ -622,24 +968,84 @@
       "timestamp": 1776889945
     },
     {
-      "timestamp": 1776890201,
       "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
-      "context": "tk"
+      "context": "tk",
+      "timestamp": 1776890201
     },
     {
-      "timestamp": 1776890622,
       "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
-      "context": "tk"
+      "context": "tk",
+      "timestamp": 1776890622
     },
     {
-      "timestamp": 1776891147,
       "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
-      "context": "tk"
+      "context": "tk",
+      "timestamp": 1776891147
     },
     {
-      "timestamp": 1776891658,
       "summary": "Check-in: Llevas rato en modo codigo. Como te sientes con el avance: fluido, trabado o cansado?",
-      "context": "assistant_config.json - AsistentePc - Visual Studio Code"
+      "context": "assistant_config.json - AsistentePc - Visual Studio Code",
+      "timestamp": 1776891658
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776892206
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776892976
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776893404
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Nueva pesta\u00f1a - Brave",
+      "timestamp": 1776894185
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Conmutaci\u00f3n de tareas",
+      "timestamp": 1776894681
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Buscar",
+      "timestamp": 1776895103
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Program Manager",
+      "timestamp": 1776895524
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk",
+      "timestamp": 1776953493
+    },
+    {
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Administrador de tareas",
+      "timestamp": 1776953915
+    },
+    {
+      "timestamp": 1776955042,
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "tk"
+    },
+    {
+      "timestamp": 1776957085,
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Program Manager"
+    },
+    {
+      "timestamp": 1776957606,
+      "summary": "Check-in: Como te estas sintiendo ahora con lo que estas haciendo?",
+      "context": "Pantalla de bloqueo predeterminada de Windows"
     }
   ]
 }
